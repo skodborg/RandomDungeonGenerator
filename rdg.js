@@ -25,24 +25,21 @@ for (var i = 0; i < temp_map_array.length; i++) {
 function paintMap() {
     var c = document.getElementById("canvas");
     var ctx = c.getContext("2d");
-    ctx.fillStyle = "#110000";
 
     for (var i = 0; i < map.length; i++) {
         for (var j = 0; j < map[i].length; j++) {
-            if (map[i][j] == 0) {
-		ctx.fillStyle = "#110000";
-                ctx.fillRect(j * BLOCK_SIZE, 
-                             i * BLOCK_SIZE,
-                             BLOCK_SIZE, 
-                             BLOCK_SIZE);
-            } else if (map[i][j] == 2) {
-		// refactor, same code above
-		ctx.fillStyle = "#FF0000";
-                ctx.fillRect(j * BLOCK_SIZE, 
-                             i * BLOCK_SIZE,
-                             BLOCK_SIZE, 
-                             BLOCK_SIZE);
-	    }
+
+	    // shift on map-entry color based on value
+            var entry = map[i][j];
+            if (entry == 0) { ctx.fillStyle = "#CCCCCC"; }
+            else if (entry == 2) { ctx.fillStyle = "#FF0000"; }
+            else { ctx.fillStyle = "#FFFFFF"; }
+
+            ctx.fillRect(j * BLOCK_SIZE, 
+                         i * BLOCK_SIZE,
+                         BLOCK_SIZE, 
+                         BLOCK_SIZE);
+
         }
     }
 }
@@ -50,37 +47,50 @@ function paintMap() {
 function generateMap() {
     // reset map
     map = [];
-    counter = 0;
+    var counter = 0;
 
+    // paint map background grey/white checkered
     for (var i = 0; i < MAP_HEIGHT; i++) {
-	map[i] = [];
-	counter++;
+        map[i] = [];
+        counter++;
         for (var j = 0; j < MAP_WIDTH; j++) {
-	    map[i][j] = counter % 2;
-	    counter++;
+            map[i][j] = counter % 2;
+            counter++;
         }
     }
 
-    var horizontal_split = true; // flip for vertical split
-    var split_pos = 0;
     // first partitioning
+    var horizontal_split = 1; // flip for vertical split
+    var split_pos = 0;
+
     horizontal_split = Math.round(Math.random());
     
-    // set split_pos randomly to somewhere between 30-70% of either
+    // set split_pos randomly to somewhere between 20-80% of either
     // map width or height, depending on horizontal_split value
     if (horizontal_split) {
-	split_pos = getRandomInt(MAP_HEIGHT * 0.20,
-				 MAP_HEIGHT * 0.80);
-	for (var i = 0; i < map[split_pos].length; i++) {
-	    map[split_pos][i] = 2;
-	}
+        split_pos = getRandomInt(MAP_HEIGHT * 0.20,
+                                 MAP_HEIGHT * 0.80);
+        for (var i = 0; i < map[split_pos].length; i++) {
+            map[split_pos][i] = 2;
+        }
     } else {
-	split_pos = getRandomInt(MAP_WIDTH * 0.20,
-				 MAP_WIDTH * 0.80);
-	for (var i = 0; i < map.length; i++) {
-	    map[i][split_pos] = 2;
-	}
+        split_pos = getRandomInt(MAP_WIDTH * 0.20,
+                                 MAP_WIDTH * 0.80);
+        for (var i = 0; i < map.length; i++) {
+            map[i][split_pos] = 2;
+        }
     }
+
+
+    // flip split-direction
+    horizontal_split = (horizontal_split+1) % 2;
+
+    // choose the bigger room
+
+    // split once again
+
+    // repeat * 3?
+
 }
 
 function getRandomInt(min, max) {
