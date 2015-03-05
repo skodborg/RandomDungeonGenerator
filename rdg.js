@@ -44,6 +44,11 @@ function paintMap() {
     }
 }
 
+// TODO: refactor: abstract the splitting-part into a local
+// helper-function 
+
+//TODO: fix: split room according to its dimensions, rather than
+// swapping directions mindlessly every split
 function generateMap() {
     // reset map
     map = [];
@@ -71,8 +76,8 @@ function generateMap() {
     // set split_pos randomly to somewhere between 20-80% of either
     // map width or height, depending on horizontal_split value
     if (horizontal_split) {
-        split_pos = getRandomInt(MAP_HEIGHT * 0.20,
-                                 MAP_HEIGHT * 0.80);
+        split_pos = getRandomInt(MAP_HEIGHT * 0.30,
+                                 MAP_HEIGHT * 0.70);
 
         // record the upper left corner of the new box after splitting
         spaces_upper_left_corners.push([split_pos+1, 0]);
@@ -82,8 +87,8 @@ function generateMap() {
             map[split_pos][i] = 2;
         }
     } else {
-        split_pos = getRandomInt(MAP_WIDTH * 0.20,
-                                 MAP_WIDTH * 0.80);
+        split_pos = getRandomInt(MAP_WIDTH * 0.30,
+                                 MAP_WIDTH * 0.70);
 
         // record the upper left corner of the new box after splitting
         spaces_upper_left_corners.push([0, split_pos+1]);
@@ -155,8 +160,8 @@ function generateMap() {
 
     if (horizontal_split) {
         // relative to biggest space
-        split_pos = getRandomInt(MAP_HEIGHT * 0.20,
-                                 MAP_HEIGHT * 0.80);
+        split_pos = getRandomInt(MAP_HEIGHT * 0.30,
+                                 MAP_HEIGHT * 0.70);
 
         // relative to whole map matrix
         split_pos_row = biggest_space[0] + split_pos + 1;
@@ -171,8 +176,8 @@ function generateMap() {
         }
     } else {
         // relative to biggest space
-        split_pos = getRandomInt(MAP_WIDTH * 0.20,
-                                 MAP_WIDTH * 0.80);
+        split_pos = getRandomInt(MAP_WIDTH * 0.30,
+                                 MAP_WIDTH * 0.70);
 
         // relative to whole map matrix
         split_pos_col = biggest_space[1] + split_pos + 1;
@@ -189,10 +194,125 @@ function generateMap() {
 
     // repeat * 3?
 
+
+    // horizontal_split = (horizontal_split + 1) % 2;
+
+
+    // choose the bigger space
+    // - check the area of each of the boxes defined by splits,
+    //   starting from the corners given in spaces_upper_left_corners
+    var spaces = []; // elements: [row,col,width,height,area]
+    
+    spaces_upper_left_corners.forEach(function(curr_corner) {
+        
+        var corner_row = curr_corner[0];
+        var corner_col = curr_corner[1];
+        var area_found = false;
+
+        for (var i = corner_row; i < MAP_HEIGHT; i++) {
+            if (!area_found) {
+                if (map[i][corner_col] == 2 || i == MAP_HEIGHT - 1) {
+                    // horizontal split found
+
+                    // off-by-1 at map end
+                    if (i == MAP_HEIGHT - 1) { i++; } 
+
+                    var curr_space_height = i - corner_row;
+
+                    for (var j = corner_col; j < MAP_WIDTH; j++) {
+                        if (!area_found) {
+                            if (map[i-1][j] == 2 || j == MAP_WIDTH - 1) {
+                                // vertical split found
+
+                                // off-by-1 at map end
+                                if (j == MAP_WIDTH - 1) { j++; } 
+
+                                area_found = true;
+                                var curr_space_width = j - corner_col; 
+                                var curr_area = curr_space_width * 
+                                    curr_space_height;
+                                spaces.push([corner_row, 
+                                             corner_col, 
+                                             curr_space_width,
+                                             curr_space_height,
+                                             curr_area]);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+
+    var biggest_space = [0,0,0,0,0];
+    spaces.forEach(function(s) {
+        var area_index = 4;
+        if (s[area_index] > biggest_space[area_index]) {
+            biggest_space = s;
+        }
+    });
+
+    horizontal_split = (horizontal_split+1) % 2;
+
+
+    // split once again
+
+    if (horizontal_split) {
+        
+        var height_idx = 3;
+        height_biggest = biggest_space[height_idx];
+        
+        // relative to biggest space
+        split_pos = getRandomInt(height_biggest * 0.30,
+                                 height_biggest * 0.70);
+
+        // relative to whole map matrix
+        split_pos_row = biggest_space[0] + split_pos + 1;
+
+        // record the upper left corner of the new box after splitting
+        spaces_upper_left_corners.push([split_pos_row,
+                                        biggest_space[1]]);
+
+        // update map matrix to reflect split
+        for (var i = biggest_space[1]; i < biggest_space[1] + biggest_space[2]; i++) {
+            split_pos_row = Math.floor(split_pos_row);
+            map[split_pos_row - 1][i] = 2;
+        }
+    } else {
+
+        var width_idx = 2;
+        width_biggest = biggest_space[width_idx];
+
+        // relative to biggest space
+        split_pos = getRandomInt(width_biggest * 0.30,
+                                 width_biggest * 0.70);
+
+        // relative to whole map matrix
+        split_pos_col = Math.floor(biggest_space[1] + split_pos + 1);
+
+        // record the upper left corner of the new box after splitting
+        spaces_upper_left_corners.push([biggest_space[0], 
+                                        split_pos_col]);
+
+        // update map matrix to reflect split
+        for (var i = biggest_space[0]; i < biggest_space[0] + biggest_space[3]; i++) {
+            map[i][split_pos_col - 1] = 2;
+        }
+    }
+
+
+
+
+
+
+
 }
 
 function getRandomInt(min, max) {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
+    var cmin = Math.ceil(min);
+    var fmax = Math.floor(max);
+    return Math.floor(Math.random() * (fmax - cmin + 1)) + cmin;
 }
 
 function init() {
