@@ -44,7 +44,7 @@ function paintMap() {
                 ctx.fillStyle = "#FF0000"; // 2: red
                 break;
             case 3:
-                ctx.fillStyle = "#0000FF"; // 2: blue
+                ctx.fillStyle = "#0000FF"; // 3: blue
                 break;
             default: // 1
                 ctx.fillStyle = "#000000"; // default: black
@@ -56,6 +56,23 @@ function paintMap() {
                          BLOCK_SIZE);
         }
     }
+}
+
+// element : [row,col,width,height,type]
+function paintOntoMap(elements) {
+    elements.forEach(function(elem) {
+	var elem_r = elem[0];
+	var elem_c = elem[1];
+	var elem_w = elem[2];
+	var elem_h = elem[3];
+	var elem_type = elem[4];
+	for(var i = 0; i < elem_h; i++) {
+	    for(var j = 0; j < elem_w; j++) {
+		map[elem_r+i][elem_c+j] = elem_type;
+	    }
+	}
+    });
+    paintMap();
 }
 
 function generateFixedMap() {
@@ -127,6 +144,16 @@ function generateMap() {
                 }
             }
         });
+
+
+	init_map();
+	room_elems = [];
+	rooms.forEach(function(r) {
+	    var temp_r = r;
+	    temp_r[4] = 3;
+	    room_elems.push(temp_r);
+	});
+	paintOntoMap(room_elems);
     }
 
     // iterates the upper-left-corners to determine spaces and fill
