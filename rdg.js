@@ -6,6 +6,7 @@ var MAP_HEIGHT = 40;
 // global dungeon data structure
 var map = [];
 
+// use generateFixedMap() to generate below map represented in string
 var map_txt = 
     "0 0 0 0 0 0 0 0 0\n" +
     "0 1 0 1 0 1 0 1 0\n" +
@@ -16,10 +17,11 @@ var map_txt =
     "0 1 0 1 0 1 0 1 0\n" +
     "0 0 0 0 0 0 0 0 0"
 
-var temp_map_array = map_txt.split("\n");
 
-for (var i = 0; i < temp_map_array.length; i++) {
-    map[i] = temp_map_array[i].split(" ");
+function init() {
+    // .. to do something eventually
+    generateMap();
+    paintMap();
 }
 
 function paintMap() {
@@ -41,6 +43,14 @@ function paintMap() {
                          BLOCK_SIZE);
         }
     }
+}
+
+function generateFixedMap() {
+    var temp_map_array = map_txt.split("\n");
+
+    for (var i = 0; i < temp_map_array.length; i++) {
+        map[i] = temp_map_array[i].split(" ");
+    }    
 }
 
 function generateMap() {
@@ -179,8 +189,3 @@ function getRandomInt(min, max) {
     return Math.floor(Math.random() * (fmax - cmin + 1)) + cmin;
 }
 
-function init() {
-    // .. to do something eventually
-    generateMap();
-    paintMap();
-}
