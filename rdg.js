@@ -56,63 +56,77 @@ function generateFixedMap() {
 function generateMap() {
 
     map = []; // reset
+    var spaces = []; // elements: [row,col,width,height,area]
+    var spaces_upper_left_corners = [[0,0]];
+
     init_map(); // MAP_WIDTH * MAP_HEIGHT
-    split_map(5); // 5 splits; 6 rooms
+    split_map(6); // 6 splits; 7 rooms
+    generateRooms();
+
+    function generateRooms() {
+	update_spaces();
+        spaces.forEach(function(s) {
+            console.log(s);
+        });
+    }
+
+    // iterates the upper-left-corners to determine spaces and fill
+    // the 'spaces'-array
+    function update_spaces() {
+	// clear spaces before refilling
+	spaces = [];
+
+        spaces_upper_left_corners.forEach(function(curr_corner) {
+            var corner_row = curr_corner[0];
+            var corner_col = curr_corner[1];
+            var area_found = false;
+
+            for (var i = corner_row; i < MAP_HEIGHT; i++) {
+                if (!area_found) {
+                    if (map[i][corner_col] == 2 || i == MAP_HEIGHT - 1) {
+                        // horizontal split found
+
+                        // off-by-1 at map end
+                        if (i == MAP_HEIGHT - 1) { i++; } 
+
+                        var curr_space_height = i - corner_row;
+
+                        for (var j = corner_col; j < MAP_WIDTH; j++) {
+                            if (!area_found) {
+                                if (map[i-1][j] == 2 || j == MAP_WIDTH - 1) {
+                                    // vertical split found
+
+                                    // off-by-1 at map end
+                                    if (j == MAP_WIDTH - 1) { j++; } 
+
+                                    area_found = true;
+                                    var curr_space_width = j - corner_col; 
+                                    var curr_area = curr_space_width * 
+                                        curr_space_height;
+                                    spaces.push([corner_row, 
+                                                 corner_col, 
+                                                 curr_space_width,
+                                                 curr_space_height,
+                                                 curr_area]);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
 
     function split_map(nr_splits) {
 
-        var spaces = []; // elements: [row,col,width,height,area]
         var split_pos = 0;
-        var spaces_upper_left_corners = [[0,0]]; 
 
         for (var i = 0; i < nr_splits; i++) {
             do_split();
         }
 
         function do_split() {
-            // clear spaces
-            spaces = [];
-
-            spaces_upper_left_corners.forEach(function(curr_corner) {
-                
-                var corner_row = curr_corner[0];
-                var corner_col = curr_corner[1];
-                var area_found = false;
-
-                for (var i = corner_row; i < MAP_HEIGHT; i++) {
-                    if (!area_found) {
-                        if (map[i][corner_col] == 2 || i == MAP_HEIGHT - 1) {
-                            // horizontal split found
-
-                            // off-by-1 at map end
-                            if (i == MAP_HEIGHT - 1) { i++; } 
-
-                            var curr_space_height = i - corner_row;
-
-                            for (var j = corner_col; j < MAP_WIDTH; j++) {
-                                if (!area_found) {
-                                    if (map[i-1][j] == 2 || j == MAP_WIDTH - 1) {
-                                        // vertical split found
-
-                                        // off-by-1 at map end
-                                        if (j == MAP_WIDTH - 1) { j++; } 
-
-                                        area_found = true;
-                                        var curr_space_width = j - corner_col; 
-                                        var curr_area = curr_space_width * 
-                                            curr_space_height;
-                                        spaces.push([corner_row, 
-                                                     corner_col, 
-                                                     curr_space_width,
-                                                     curr_space_height,
-                                                     curr_area]);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            });
+	    update_spaces();
 
             // find biggest current space in map
             var biggest_space = [0,0,0,0,0];
