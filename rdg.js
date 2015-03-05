@@ -31,11 +31,24 @@ function paintMap() {
     for (var i = 0; i < map.length; i++) {
         for (var j = 0; j < map[i].length; j++) {
 
-            // shift on map-entry color based on value
+            // switch on map-entry color based on value
             var entry = map[i][j];
-            if (entry == 0) { ctx.fillStyle = "#CCCCCC"; }
-            else if (entry == 2) { ctx.fillStyle = "#FF0000"; }
-            else { ctx.fillStyle = "#FFFFFF"; }
+            switch(entry) {
+            case 0:
+                ctx.fillStyle = "#CCCCCC"; // 0: grey
+                break;
+            case 1:
+                ctx.fillStyle = "#FFFFFF"; // 1: white
+                break;
+            case 2:
+                ctx.fillStyle = "#FF0000"; // 2: red
+                break;
+            case 3:
+                ctx.fillStyle = "#0000FF"; // 2: blue
+                break;
+            default: // 1
+                ctx.fillStyle = "#000000"; // default: black
+            }
 
             ctx.fillRect(j * BLOCK_SIZE, 
                          i * BLOCK_SIZE,
@@ -64,7 +77,7 @@ function generateMap() {
     generateRooms();
 
     function generateRooms() {
-	update_spaces();
+        update_spaces();
         spaces.forEach(function(s) {
             console.log(s);
         });
@@ -73,8 +86,8 @@ function generateMap() {
     // iterates the upper-left-corners to determine spaces and fill
     // the 'spaces'-array
     function update_spaces() {
-	// clear spaces before refilling
-	spaces = [];
+        // clear spaces before refilling
+        spaces = [];
 
         spaces_upper_left_corners.forEach(function(curr_corner) {
             var corner_row = curr_corner[0];
@@ -126,7 +139,7 @@ function generateMap() {
         }
 
         function do_split() {
-	    update_spaces();
+            update_spaces();
 
             // find biggest current space in map
             var biggest_space = [0,0,0,0,0];
