@@ -78,38 +78,55 @@ function generateMap() {
 
     function generateRooms() {
 
-	var rooms = []; // elements: [row,col,width,height]
+        var rooms = []; // elements: [row,col,width,height,area]
         update_spaces();
 
         spaces.forEach(function(space) {
-	    var r_space = space[0];
-	    var c_space = space[1];
-	    var w_space = space[2];
-	    var h_space = space[3];
+            var r_space = space[0];
+            var c_space = space[1];
+            var w_space = space[2];
+            var h_space = space[3];
 
-	    // room: 50% of width of space
-	    //       50% of height of space
-	    // placed at upper left corner of space
-	    var w_room = w_space * 0.5;
-	    var h_room = h_space * 0.5;
-	    var r_room = r_space;
-	    var c_room = c_space;
+            // room: 30-70% of width of space
+            //       100%-width% of height of space
+            var rand_pct_w = getRandomInt(3, 7) / 10;
+            var rand_pct_h = 1-rand_pct_w;
+            // correcting javascript floating point weirdness
+            rand_pct_h = Math.round(rand_pct_h * 10) / 10;
 
-	    rooms.push([r_room, c_room, w_room, h_room]);
+            var w_room = Math.round(w_space * rand_pct_w);
+            var h_room = Math.round(h_space * rand_pct_h);
+
+            // room coordinates: 10-90% (random) of the slack on each
+            //   axis is added to the coordinate of the upper left
+            //   corner of the space to determine the coordinate of
+            //   the room
+            var horizontal_slack = w_space - w_room;
+            var vertical_slack = h_space - h_room;
+
+            var rand_pct_hrz = getRandomInt(1, 9) / 10;
+            var rand_pct_vrt = 1 - rand_pct_hrz;
+            // correcting javascript floating point weirdness
+            rand_pct_vrt = Math.round(rand_pct_vrt * 10) / 10;
+
+            var r_room = Math.round(r_space + (vertical_slack * rand_pct_vrt));
+            var c_room = Math.round(c_space + (horizontal_slack * rand_pct_hrz));
+
+            rooms.push([r_room, c_room, w_room, h_room, (w_room * h_room)]);
         });
 
-	// update map to include created rooms
-	rooms.forEach(function(r) {
-	    var r_rm = r[0];
-	    var c_rm = r[1];
-	    var w_rm = r[2];
-	    var h_rm = r[3];
-	    for(var i = r_rm; i < (r_rm + h_rm); i++) {
-		for (var j = c_rm; j < (c_rm + w_rm); j++) {
-		    map[i][j] = 3;
-		}
-	    }
-	});
+        // update map to include created rooms
+        rooms.forEach(function(r) {
+            var r_rm = r[0];
+            var c_rm = r[1];
+            var w_rm = r[2];
+            var h_rm = r[3];
+            for(var i = r_rm; i < (r_rm + h_rm); i++) {
+                for (var j = c_rm; j < (c_rm + w_rm); j++) {
+                    map[i][j] = 3;
+                }
+            }
+        });
     }
 
     // iterates the upper-left-corners to determine spaces and fill
