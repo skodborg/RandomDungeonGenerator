@@ -77,10 +77,39 @@ function generateMap() {
     generateRooms();
 
     function generateRooms() {
+
+	var rooms = []; // elements: [row,col,width,height]
         update_spaces();
-        spaces.forEach(function(s) {
-            console.log(s);
+
+        spaces.forEach(function(space) {
+	    var r_space = space[0];
+	    var c_space = space[1];
+	    var w_space = space[2];
+	    var h_space = space[3];
+
+	    // room: 50% of width of space
+	    //       50% of height of space
+	    // placed at upper left corner of space
+	    var w_room = w_space * 0.5;
+	    var h_room = h_space * 0.5;
+	    var r_room = r_space;
+	    var c_room = c_space;
+
+	    rooms.push([r_room, c_room, w_room, h_room]);
         });
+
+	// update map to include created rooms
+	rooms.forEach(function(r) {
+	    var r_rm = r[0];
+	    var c_rm = r[1];
+	    var w_rm = r[2];
+	    var h_rm = r[3];
+	    for(var i = r_rm; i < (r_rm + h_rm); i++) {
+		for (var j = c_rm; j < (c_rm + w_rm); j++) {
+		    map[i][j] = 3;
+		}
+	    }
+	});
     }
 
     // iterates the upper-left-corners to determine spaces and fill
