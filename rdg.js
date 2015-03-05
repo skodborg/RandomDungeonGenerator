@@ -85,56 +85,22 @@ function generateFixedMap() {
 
 function generateMap() {
 
-    map = []; // reset
     init_map(); // MAP_WIDTH * MAP_HEIGHT
     generateRooms();
 
-
     function generateRooms() {
 
-        var spaces = []; // elements: [row,col,width,height,area]
-        var spaces_upper_left_corners = [[0,0]];
-
-        split_map(6); // 6 splits; 7 rooms
-
         var rooms = []; // elements: [row,col,width,height,area]
-        update_spaces();
+        var spaces = []; // elements: [row,col,width,height,area]
+        var spaces_upper_left_corners = [[0,0]]; // state updated in split_map()
+        // clone global_map to avoid drawing splits on it
+        var tmp_map = cloneMap(global_map);
 
-        spaces.forEach(function(space) {
-            var r_space = space[0];
-            var c_space = space[1];
-            var w_space = space[2];
-            var h_space = space[3];
+        split_map(6, tmp_map); // 6 splits; 7 rooms
+        update_spaces(tmp_map); // updates 'spaces'-array based on splits
+        create_rooms(); // fills 'rooms'-array
 
-            // room: 30-70% of width of space
-            //       100%-width% of height of space
-            var rand_pct_w = getRandomInt(3, 7) / 10;
-            var rand_pct_h = 1-rand_pct_w;
-            // correcting javascript floating point weirdness
-            rand_pct_h = Math.round(rand_pct_h * 10) / 10;
-
-            var w_room = Math.round(w_space * rand_pct_w);
-            var h_room = Math.round(h_space * rand_pct_h);
-
-            // room coordinates: 10-90% (random) of the slack on each
-            //   axis is added to the coordinate of the upper left
-            //   corner of the space to determine the coordinate of
-            //   the room
-            var horizontal_slack = w_space - w_room;
-            var vertical_slack = h_space - h_room;
-
-            var rand_pct_hrz = getRandomInt(1, 9) / 10;
-            var rand_pct_vrt = 1 - rand_pct_hrz;
-            // correcting javascript floating point weirdness
-            rand_pct_vrt = Math.round(rand_pct_vrt * 10) / 10;
-
-            var r_room = Math.round(r_space + (vertical_slack * rand_pct_vrt));
-            var c_room = Math.round(c_space + (horizontal_slack * rand_pct_hrz));
-
-            rooms.push([r_room, c_room, w_room, h_room, (w_room * h_room)]);
-        });
-
-        // update map to include created rooms
+        // update global_map to include created rooms
         rooms.forEach(function(r) {
             var r_rm = r[0];
             var c_rm = r[1];
@@ -147,19 +113,46 @@ function generateMap() {
             }
         });
 
+        // create rooms based on spaces
+        function create_rooms() {
+            spaces.forEach(function(space) {
+                var r_space = space[0];
+                var c_space = space[1];
+                var w_space = space[2];
+                var h_space = space[3];
 
-        init_map();
-        room_elems = [];
-        rooms.forEach(function(r) {
-            var temp_r = r;
-            temp_r[4] = 3;
-            room_elems.push(temp_r);
-        });
-        paintOntoMap(room_elems);
+                // room: 30-70% of width of space
+                //       100%-width% of height of space
+                var rand_pct_w = getRandomInt(3, 7) / 10;
+                var rand_pct_h = 1-rand_pct_w;
+                // correcting javascript floating point weirdness
+                rand_pct_h = Math.round(rand_pct_h * 10) / 10;
+
+                var w_room = Math.round(w_space * rand_pct_w);
+                var h_room = Math.round(h_space * rand_pct_h);
+
+                // room coordinates: 10-90% (random) of the slack on each
+                //   axis is added to the coordinate of the upper left
+                //   corner of the space to determine the coordinate of
+                //   the room
+                var horizontal_slack = w_space - w_room;
+                var vertical_slack = h_space - h_room;
+
+                var rand_pct_hrz = getRandomInt(1, 9) / 10;
+                var rand_pct_vrt = 1 - rand_pct_hrz;
+                // correcting javascript floating point weirdness
+                rand_pct_vrt = Math.round(rand_pct_vrt * 10) / 10;
+
+                var r_room = Math.round(r_space + (vertical_slack * rand_pct_vrt));
+                var c_room = Math.round(c_space + (horizontal_slack * rand_pct_hrz));
+
+                rooms.push([r_room, c_room, w_room, h_room, (w_room * h_room)]);
+            });
+        }
 
         // iterates the upper-left-corners to determine spaces and fill
         // the 'spaces'-array
-        function update_spaces() {
+        function update_spaces(arg_map) {
             // clear spaces before refilling
             spaces = [];
 
@@ -170,7 +163,8 @@ function generateMap() {
 
                 for (var i = corner_row; i < MAP_HEIGHT; i++) {
                     if (!area_found) {
-                        if (global_map[i][corner_col] == 2 || i == MAP_HEIGHT - 1) {
+                        if (arg_map[i][corner_col] == 2 
+			    || i == MAP_HEIGHT - 1) {
                             // horizontal split found
 
                             // off-by-1 at map end
@@ -180,7 +174,8 @@ function generateMap() {
 
                             for (var j = corner_col; j < MAP_WIDTH; j++) {
                                 if (!area_found) {
-                                    if (global_map[i-1][j] == 2 || j == MAP_WIDTH - 1) {
+                                    if (arg_map[i-1][j] == 2
+                                        || j == MAP_WIDTH - 1) {
                                         // vertical split found
 
                                         // off-by-1 at map end
@@ -204,7 +199,7 @@ function generateMap() {
             });
         }
 
-        function split_map(nr_splits) {
+        function split_map(nr_splits, map_to_split) {
 
             var split_pos = 0;
 
@@ -213,7 +208,7 @@ function generateMap() {
             }
 
             function do_split() {
-                update_spaces();
+                update_spaces(map_to_split);
 
                 // find biggest current space in map
                 var biggest_space = [0,0,0,0,0];
@@ -246,7 +241,7 @@ function generateMap() {
 
                     // update map matrix to reflect split
                     for (var i = c_biggest; i < c_biggest + w_biggest; i++) {
-                        global_map[split_pos_row - 1][i] = 2;
+                        map_to_split[split_pos_row - 1][i] = 2;
                     }
                 } else {
                     // relative to biggest space
@@ -262,15 +257,13 @@ function generateMap() {
 
                     // update map matrix to reflect split
                     for (var i = r_biggest; i < r_biggest + h_biggest; i++) {
-                        global_map[i][split_pos_col - 1] = 2;
+                        map_to_split[i][split_pos_col - 1] = 2;
                     }
                 }
 
             }
         }
     }
-
-
 
     // initializes map with defined dimensions, and paints map
     // background grey/white checkered
