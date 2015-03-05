@@ -283,6 +283,14 @@ function generateMap() {
     }
 }
 
+function cloneMap(map) {
+    var newMap = [];
+    for(var i = 0; i < map.length; i++) {
+	newMap.push(map[i].slice());
+    }
+    return newMap;
+}
+
 function getRandomInt(min, max) {
     var cmin = Math.ceil(min);
     var fmax = Math.floor(max);
