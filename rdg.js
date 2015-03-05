@@ -4,7 +4,7 @@ var MAP_WIDTH = 40;
 var MAP_HEIGHT = 40;
 
 // global dungeon data structure
-var map = [];
+var global_map = [];
 
 // use generateFixedMap() to generate below map represented in string
 var map_txt = 
@@ -28,11 +28,11 @@ function paintMap() {
     var c = document.getElementById("canvas");
     var ctx = c.getContext("2d");
 
-    for (var i = 0; i < map.length; i++) {
-        for (var j = 0; j < map[i].length; j++) {
+    for (var i = 0; i < global_map.length; i++) {
+        for (var j = 0; j < global_map[i].length; j++) {
 
             // switch on map-entry color based on value
-            var entry = map[i][j];
+            var entry = global_map[i][j];
             switch(entry) {
             case 0:
                 ctx.fillStyle = "#CCCCCC"; // 0: grey
@@ -68,7 +68,7 @@ function paintOntoMap(elements) {
 	var elem_type = elem[4];
 	for(var i = 0; i < elem_h; i++) {
 	    for(var j = 0; j < elem_w; j++) {
-		map[elem_r+i][elem_c+j] = elem_type;
+		global_map[elem_r+i][elem_c+j] = elem_type;
 	    }
 	}
     });
@@ -140,7 +140,7 @@ function generateMap() {
             var h_rm = r[3];
             for(var i = r_rm; i < (r_rm + h_rm); i++) {
                 for (var j = c_rm; j < (c_rm + w_rm); j++) {
-                    map[i][j] = 3;
+                    global_map[i][j] = 3;
                 }
             }
         });
@@ -169,7 +169,7 @@ function generateMap() {
 
             for (var i = corner_row; i < MAP_HEIGHT; i++) {
                 if (!area_found) {
-                    if (map[i][corner_col] == 2 || i == MAP_HEIGHT - 1) {
+                    if (global_map[i][corner_col] == 2 || i == MAP_HEIGHT - 1) {
                         // horizontal split found
 
                         // off-by-1 at map end
@@ -179,7 +179,7 @@ function generateMap() {
 
                         for (var j = corner_col; j < MAP_WIDTH; j++) {
                             if (!area_found) {
-                                if (map[i-1][j] == 2 || j == MAP_WIDTH - 1) {
+                                if (global_map[i-1][j] == 2 || j == MAP_WIDTH - 1) {
                                     // vertical split found
 
                                     // off-by-1 at map end
@@ -245,7 +245,7 @@ function generateMap() {
 
                 // update map matrix to reflect split
                 for (var i = c_biggest; i < c_biggest + w_biggest; i++) {
-                    map[split_pos_row - 1][i] = 2;
+                    global_map[split_pos_row - 1][i] = 2;
                 }
             } else {
                 // relative to biggest space
@@ -261,7 +261,7 @@ function generateMap() {
 
                 // update map matrix to reflect split
                 for (var i = r_biggest; i < r_biggest + h_biggest; i++) {
-                    map[i][split_pos_col - 1] = 2;
+                    global_map[i][split_pos_col - 1] = 2;
                 }
             }
 
@@ -273,10 +273,10 @@ function generateMap() {
     function init_map() {
         var counter = 0;
         for (var i = 0; i < MAP_HEIGHT; i++) {
-            map[i] = [];
+            global_map[i] = [];
             counter++;
             for (var j = 0; j < MAP_WIDTH; j++) {
-                map[i][j] = counter % 2;
+                global_map[i][j] = counter % 2;
                 counter++;
             }
         }
