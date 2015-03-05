@@ -39,274 +39,138 @@ function paintMap() {
                          i * BLOCK_SIZE,
                          BLOCK_SIZE, 
                          BLOCK_SIZE);
-
         }
     }
 }
 
-// TODO: refactor: abstract the splitting-part into a local
-// helper-function 
-
-//TODO: fix: split room according to its dimensions, rather than
-// swapping directions mindlessly every split
 function generateMap() {
-    // reset map
-    map = [];
-    var counter = 0;
 
-    // paint map background grey/white checkered
-    for (var i = 0; i < MAP_HEIGHT; i++) {
-        map[i] = [];
-        counter++;
-        for (var j = 0; j < MAP_WIDTH; j++) {
-            map[i][j] = counter % 2;
+    map = []; // reset
+    init_map(); // MAP_WIDTH * MAP_HEIGHT
+    split_map(5); // 5 splits; 6 rooms
+
+    function split_map(nr_splits) {
+
+        var spaces = []; // elements: [row,col,width,height,area]
+        var split_pos = 0;
+        var spaces_upper_left_corners = [[0,0]]; 
+
+        for (var i = 0; i < nr_splits; i++) {
+            do_split();
+        }
+
+        function do_split() {
+            // clear spaces
+            spaces = [];
+
+            spaces_upper_left_corners.forEach(function(curr_corner) {
+                
+                var corner_row = curr_corner[0];
+                var corner_col = curr_corner[1];
+                var area_found = false;
+
+                for (var i = corner_row; i < MAP_HEIGHT; i++) {
+                    if (!area_found) {
+                        if (map[i][corner_col] == 2 || i == MAP_HEIGHT - 1) {
+                            // horizontal split found
+
+                            // off-by-1 at map end
+                            if (i == MAP_HEIGHT - 1) { i++; } 
+
+                            var curr_space_height = i - corner_row;
+
+                            for (var j = corner_col; j < MAP_WIDTH; j++) {
+                                if (!area_found) {
+                                    if (map[i-1][j] == 2 || j == MAP_WIDTH - 1) {
+                                        // vertical split found
+
+                                        // off-by-1 at map end
+                                        if (j == MAP_WIDTH - 1) { j++; } 
+
+                                        area_found = true;
+                                        var curr_space_width = j - corner_col; 
+                                        var curr_area = curr_space_width * 
+                                            curr_space_height;
+                                        spaces.push([corner_row, 
+                                                     corner_col, 
+                                                     curr_space_width,
+                                                     curr_space_height,
+                                                     curr_area]);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // find biggest current space in map
+            var biggest_space = [0,0,0,0,0];
+            spaces.forEach(function(s) {
+                var area_index = 4;
+                if (s[area_index] > biggest_space[area_index]) {
+                    biggest_space = s;
+                }
+            });
+
+            // decide direction
+            var r_biggest = biggest_space[0];
+            var c_biggest = biggest_space[1];
+            var w_biggest = biggest_space[2];
+            var h_biggest = biggest_space[3];
+            horizontal_split = (w_biggest < h_biggest) ? 1 : 0;
+
+            // split biggest space
+            if (horizontal_split) {
+                // relative to biggest space
+                split_pos = getRandomInt(h_biggest * 0.30,
+                                         h_biggest * 0.70);
+
+                // relative to whole map matrix
+                split_pos_row = r_biggest + split_pos + 1;
+
+                // record the upper left corner of the new box after splitting
+                spaces_upper_left_corners.push([split_pos_row,
+                                                c_biggest]);
+
+                // update map matrix to reflect split
+                for (var i = c_biggest; i < c_biggest + w_biggest; i++) {
+                    map[split_pos_row - 1][i] = 2;
+                }
+            } else {
+                // relative to biggest space
+                split_pos = getRandomInt(w_biggest * 0.30,
+                                         w_biggest * 0.70);
+
+                // relative to whole map matrix
+                split_pos_col = c_biggest + split_pos + 1;
+
+                // record the upper left corner of the new box after splitting
+                spaces_upper_left_corners.push([r_biggest, 
+                                                split_pos_col]);
+
+                // update map matrix to reflect split
+                for (var i = r_biggest; i < r_biggest + h_biggest; i++) {
+                    map[i][split_pos_col - 1] = 2;
+                }
+            }
+
+        }
+    }
+
+    // initializes map with defined dimensions, and paints map
+    // background grey/white checkered
+    function init_map() {
+        var counter = 0;
+        for (var i = 0; i < MAP_HEIGHT; i++) {
+            map[i] = [];
             counter++;
-        }
-    }
-
-    // first partitioning
-    var horizontal_split = 1; // flip for vertical split
-    var split_pos = 0;
-    var spaces_upper_left_corners = [[0,0]]; // whenever a split occurs,
-    // the upper left corner is
-    // recorded here
-
-    horizontal_split = Math.round(Math.random());
-    
-    // set split_pos randomly to somewhere between 20-80% of either
-    // map width or height, depending on horizontal_split value
-    if (horizontal_split) {
-        split_pos = getRandomInt(MAP_HEIGHT * 0.30,
-                                 MAP_HEIGHT * 0.70);
-
-        // record the upper left corner of the new box after splitting
-        spaces_upper_left_corners.push([split_pos+1, 0]);
-
-        // update map matrix to reflect split
-        for (var i = 0; i < map[split_pos].length; i++) {
-            map[split_pos][i] = 2;
-        }
-    } else {
-        split_pos = getRandomInt(MAP_WIDTH * 0.30,
-                                 MAP_WIDTH * 0.70);
-
-        // record the upper left corner of the new box after splitting
-        spaces_upper_left_corners.push([0, split_pos+1]);
-
-        // update map matrix to reflect split
-        for (var i = 0; i < map.length; i++) {
-            map[i][split_pos] = 2;
-        }
-    }
-
-    // flip split-direction
-    horizontal_split = (horizontal_split+1) % 2;
-
-    // choose the bigger space
-    // - check the area of each of the boxes defined by splits,
-    //   starting from the corners given in spaces_upper_left_corners
-    var spaces = []; // elements: [row,col,width,height,area]
-    
-    spaces_upper_left_corners.forEach(function(curr_corner) {
-        
-        var corner_row = curr_corner[0];
-        var corner_col = curr_corner[1];
-        var area_found = false;
-
-        for (var i = corner_row; i < MAP_HEIGHT; i++) {
-            if (!area_found) {
-                if (map[i][corner_col] == 2 || i == MAP_HEIGHT - 1) {
-                    // horizontal split found
-
-                    // off-by-1 at map end
-                    if (i == MAP_HEIGHT - 1) { i++; } 
-
-                    var curr_space_height = i - corner_row;
-
-                    for (var j = corner_col; j < MAP_WIDTH; j++) {
-                        if (!area_found) {
-                            if (map[i-1][j] == 2 || j == MAP_WIDTH - 1) {
-                                // vertical split found
-
-                                // off-by-1 at map end
-                                if (j == MAP_WIDTH - 1) { j++; } 
-
-                                area_found = true;
-                                var curr_space_width = j - corner_col; 
-                                var curr_area = curr_space_width * 
-                                    curr_space_height;
-                                spaces.push([corner_row, 
-                                             corner_col, 
-                                             curr_space_width,
-                                             curr_space_height,
-                                             curr_area]);
-                            }
-                        }
-                    }
-                }
+            for (var j = 0; j < MAP_WIDTH; j++) {
+                map[i][j] = counter % 2;
+                counter++;
             }
         }
-    });
-
-    var biggest_space = [0,0,0,0,0];
-    spaces.forEach(function(s) {
-        var area_index = 4;
-        if (s[area_index] > biggest_space[area_index]) {
-            biggest_space = s;
-        }
-    });
-
-    // split once again
-
-    if (horizontal_split) {
-        // relative to biggest space
-        split_pos = getRandomInt(MAP_HEIGHT * 0.30,
-                                 MAP_HEIGHT * 0.70);
-
-        // relative to whole map matrix
-        split_pos_row = biggest_space[0] + split_pos + 1;
-
-        // record the upper left corner of the new box after splitting
-        spaces_upper_left_corners.push([split_pos_row,
-                                        biggest_space[1]]);
-
-        // update map matrix to reflect split
-        for (var i = biggest_space[1]; i < biggest_space[1] + biggest_space[2]; i++) {
-            map[split_pos_row - 1][i] = 2;
-        }
-    } else {
-        // relative to biggest space
-        split_pos = getRandomInt(MAP_WIDTH * 0.30,
-                                 MAP_WIDTH * 0.70);
-
-        // relative to whole map matrix
-        split_pos_col = biggest_space[1] + split_pos + 1;
-
-        // record the upper left corner of the new box after splitting
-        spaces_upper_left_corners.push([biggest_space[0], 
-                                        split_pos_col]);
-
-        // update map matrix to reflect split
-        for (var i = biggest_space[0]; i < biggest_space[0] + biggest_space[3]; i++) {
-            map[i][split_pos_col - 1] = 2;
-        }
     }
-
-    // repeat * 3?
-
-
-    // horizontal_split = (horizontal_split + 1) % 2;
-
-
-    // choose the bigger space
-    // - check the area of each of the boxes defined by splits,
-    //   starting from the corners given in spaces_upper_left_corners
-    var spaces = []; // elements: [row,col,width,height,area]
-    
-    spaces_upper_left_corners.forEach(function(curr_corner) {
-        
-        var corner_row = curr_corner[0];
-        var corner_col = curr_corner[1];
-        var area_found = false;
-
-        for (var i = corner_row; i < MAP_HEIGHT; i++) {
-            if (!area_found) {
-                if (map[i][corner_col] == 2 || i == MAP_HEIGHT - 1) {
-                    // horizontal split found
-
-                    // off-by-1 at map end
-                    if (i == MAP_HEIGHT - 1) { i++; } 
-
-                    var curr_space_height = i - corner_row;
-
-                    for (var j = corner_col; j < MAP_WIDTH; j++) {
-                        if (!area_found) {
-                            if (map[i-1][j] == 2 || j == MAP_WIDTH - 1) {
-                                // vertical split found
-
-                                // off-by-1 at map end
-                                if (j == MAP_WIDTH - 1) { j++; } 
-
-                                area_found = true;
-                                var curr_space_width = j - corner_col; 
-                                var curr_area = curr_space_width * 
-                                    curr_space_height;
-                                spaces.push([corner_row, 
-                                             corner_col, 
-                                             curr_space_width,
-                                             curr_space_height,
-                                             curr_area]);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    });
-
-
-    var biggest_space = [0,0,0,0,0];
-    spaces.forEach(function(s) {
-        var area_index = 4;
-        if (s[area_index] > biggest_space[area_index]) {
-            biggest_space = s;
-        }
-    });
-
-    horizontal_split = (horizontal_split+1) % 2;
-
-
-    // split once again
-
-    if (horizontal_split) {
-        
-        var height_idx = 3;
-        height_biggest = biggest_space[height_idx];
-        
-        // relative to biggest space
-        split_pos = getRandomInt(height_biggest * 0.30,
-                                 height_biggest * 0.70);
-
-        // relative to whole map matrix
-        split_pos_row = biggest_space[0] + split_pos + 1;
-
-        // record the upper left corner of the new box after splitting
-        spaces_upper_left_corners.push([split_pos_row,
-                                        biggest_space[1]]);
-
-        // update map matrix to reflect split
-        for (var i = biggest_space[1]; i < biggest_space[1] + biggest_space[2]; i++) {
-            split_pos_row = Math.floor(split_pos_row);
-            map[split_pos_row - 1][i] = 2;
-        }
-    } else {
-
-        var width_idx = 2;
-        width_biggest = biggest_space[width_idx];
-
-        // relative to biggest space
-        split_pos = getRandomInt(width_biggest * 0.30,
-                                 width_biggest * 0.70);
-
-        // relative to whole map matrix
-        split_pos_col = Math.floor(biggest_space[1] + split_pos + 1);
-
-        // record the upper left corner of the new box after splitting
-        spaces_upper_left_corners.push([biggest_space[0], 
-                                        split_pos_col]);
-
-        // update map matrix to reflect split
-        for (var i = biggest_space[0]; i < biggest_space[0] + biggest_space[3]; i++) {
-            map[i][split_pos_col - 1] = 2;
-        }
-    }
-
-
-
-
-
-
-
 }
 
 function getRandomInt(min, max) {
