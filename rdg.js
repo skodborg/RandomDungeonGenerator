@@ -1,7 +1,9 @@
+window.onload = init;
+
 // constants
 var BLOCK_SIZE = 10;
-var MAP_WIDTH = 40;
-var MAP_HEIGHT = 40;
+var MAP_WIDTH = 0;  // initialized in init() when html has loaded
+var MAP_HEIGHT = 0; // initialized in init() when html has loaded
 
 // global dungeon data structure
 var global_map = [];
@@ -19,9 +21,19 @@ var map_txt =
 
 
 function init() {
+    // initialize map size constants according to canvas
+    MAP_HEIGHT = 
+        document.getElementById("canvas").getAttribute("height") / BLOCK_SIZE;
+    MAP_WIDTH = 
+        document.getElementById("canvas").getAttribute("width") / BLOCK_SIZE;
     // .. to do something eventually
     generateMap();
     paintMap();
+
+
+    
+
+
 }
 
 function paintMap() {
@@ -96,7 +108,7 @@ function generateMap() {
         // clone global_map to avoid drawing splits on it
         var tmp_map = cloneMap(global_map);
 
-        split_map(6, tmp_map); // 6 splits; 7 rooms
+        split_map(7, tmp_map); // 6 splits; 7 rooms
         update_spaces(tmp_map); // updates 'spaces'-array based on splits
         create_rooms(); // fills 'rooms'-array
 
@@ -124,7 +136,8 @@ function generateMap() {
                 // room: 30-70% of width of space
                 //       100%-width% of height of space
                 var rand_pct_w = getRandomInt(3, 7) / 10;
-                var rand_pct_h = 1-rand_pct_w;
+                // var rand_pct_h = 1-rand_pct_w;
+                var rand_pct_h = getRandomInt(3, 7) / 10;
                 // correcting javascript floating point weirdness
                 rand_pct_h = Math.round(rand_pct_h * 10) / 10;
 
@@ -138,8 +151,9 @@ function generateMap() {
                 var horizontal_slack = w_space - w_room;
                 var vertical_slack = h_space - h_room;
 
-                var rand_pct_hrz = getRandomInt(1, 9) / 10;
-                var rand_pct_vrt = 1 - rand_pct_hrz;
+                var rand_pct_hrz = getRandomInt(3, 6) / 10;
+                // var rand_pct_vrt = 1 - rand_pct_hrz;
+                var rand_pct_vrt = getRandomInt(3, 6) / 10;
                 // correcting javascript floating point weirdness
                 rand_pct_vrt = Math.round(rand_pct_vrt * 10) / 10;
 
@@ -164,7 +178,7 @@ function generateMap() {
                 for (var i = corner_row; i < MAP_HEIGHT; i++) {
                     if (!area_found) {
                         if (arg_map[i][corner_col] == 2 
-			    || i == MAP_HEIGHT - 1) {
+                            || i == MAP_HEIGHT - 1) {
                             // horizontal split found
 
                             // off-by-1 at map end
