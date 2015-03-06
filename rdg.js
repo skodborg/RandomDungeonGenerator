@@ -159,7 +159,15 @@ function generateMap() {
 	// skewing of the tmp_map to leave room at the edges of the
 	// map for eventual corridors (addition of corridor_margin)
         rooms.forEach(function(r) {
+
 	    var cm = corridor_margin;
+
+	    // correcting room & door coordinates to recover from the
+	    // skewing of the tmp_map relative to global_map, related
+	    // to the corridor-margin around the edges of the map
+	    r[0] += cm;
+	    r[1] += cm;
+
             var r_rm = r[0];
             var c_rm = r[1];
             var w_rm = r[2];
@@ -168,14 +176,15 @@ function generateMap() {
 	    // include room 'body' on map
             for(var i = r_rm; i < (r_rm + h_rm); i++) {
                 for (var j = c_rm; j < (c_rm + w_rm); j++) {
-                    global_map[i + cm][j + cm] = 3;
+                    global_map[i][j] = 3;
                 }
             }
 	    // include room doors on map
 	    doors_rm.forEach(function(door) {
-		var door_r = door[0];
-		var door_c = door[1];
-		global_map[door_r + cm][door_c + cm] = 4;
+		// adding cm to correct state of door-coord for corridor_margin
+		var door_r = door[0] += cm;
+		var door_c = door[1] += cm;
+		global_map[door_r][door_c] = 4;
 	    });
         });
 
