@@ -26,13 +26,13 @@ var map_txt =
 "0 1 0 3 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1\n" +
 "1 0 1 3 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0\n" +
 "0 1 0 3 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1\n" +
-"1 0 1 3 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0\n" +
+"1 0 1 3 3 3 3 3 3 3 3 3 3 4 1 0 1 0 1 0 1 0 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0\n" +
 "0 1 0 3 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1\n" +
 "1 0 1 3 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0\n" +
 "0 1 0 3 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1\n" +
 "1 0 1 3 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0\n" +
 "0 1 0 3 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1\n" +
-"1 0 1 3 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0\n" +
+"1 0 1 3 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0 4 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0\n" +
 "0 1 0 3 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1\n" +
 "1 0 1 3 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0\n" +
 "0 1 0 3 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1\n" +
@@ -60,7 +60,7 @@ function init() {
         document.getElementById("canvas").getAttribute("width") / BLOCK_SIZE;
 
     generateFixedMap();
-    // generateMap();
+    generateMap();
     paintMap();
 }
 
@@ -85,6 +85,9 @@ function paintMap() {
                 break;
             case 3:
                 ctx.fillStyle = "#0000FF"; // 3: blue
+                break;
+            case 4:
+                ctx.fillStyle = "#00FF00"; // 4: green
                 break;
             default: // 1
                 ctx.fillStyle = "#000000"; // default: black
@@ -128,7 +131,7 @@ function generateFixedMap() {
 function generateMap() {
 
     init_map(); // MAP_WIDTH * MAP_HEIGHT
-    generateRooms();
+    var rooms = generateRooms();
 
     function generateRooms() {
 
@@ -150,21 +153,55 @@ function generateMap() {
         split_map(6, tmp_map); // 6 splits; 7 rooms
         update_spaces(tmp_map); // updates 'spaces'-array based on splits
         create_rooms(); // fills 'rooms'-array
+	create_doors_in_rooms(rooms);
 
         // update global_map to include created rooms, correcting for the
 	// skewing of the tmp_map to leave room at the edges of the
 	// map for eventual corridors (addition of corridor_margin)
         rooms.forEach(function(r) {
+	    var cm = corridor_margin;
             var r_rm = r[0];
             var c_rm = r[1];
             var w_rm = r[2];
             var h_rm = r[3];
+	    var doors_rm = r[5];
+	    // include room 'body' on map
             for(var i = r_rm; i < (r_rm + h_rm); i++) {
                 for (var j = c_rm; j < (c_rm + w_rm); j++) {
-                    global_map[i + corridor_margin][j + corridor_margin] = 3;
+                    global_map[i + cm][j + cm] = 3;
                 }
             }
+	    // include room doors on map
+	    doors_rm.forEach(function(door) {
+		var door_r = door[0];
+		var door_c = door[1];
+		global_map[door_r + cm][door_c + cm] = 4;
+	    });
         });
+
+	// return 'rooms'-array
+	return rooms;
+
+	
+	// modifies rooms in given array to include doors, by pushing
+	// a list of doors on each room-specification-array
+	// result: list with room-elements: 
+	//         [row,col,width,height,area,[doors-list]]
+	// where [doors-list] contains elements:
+	//          [[door1_row, door2_col], [door2_row, door2_col], ...]
+	function create_doors_in_rooms(rooms_array) {
+	    rooms_array.forEach(function(room) {
+		var ul_r = room[0];
+		var ul_c = room[1];
+
+		var room_doors = [];
+		// create a room in upper-left corner of each room
+		room_doors.push([ul_r, ul_c]);
+
+		// push the list of doors on the room-specification
+		room.push(room_doors);
+	    });
+	}
 
         // create rooms based on spaces
         function create_rooms() {
