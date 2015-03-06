@@ -26,13 +26,9 @@ function init() {
         document.getElementById("canvas").getAttribute("height") / BLOCK_SIZE;
     MAP_WIDTH = 
         document.getElementById("canvas").getAttribute("width") / BLOCK_SIZE;
-    // .. to do something eventually
+
     generateMap();
     paintMap();
-
-
-    
-
 
 }
 
@@ -105,6 +101,7 @@ function generateMap() {
         var rooms = []; // elements: [row,col,width,height,area]
         var spaces = []; // elements: [row,col,width,height,area]
         var spaces_upper_left_corners = [[0,0]]; // state updated in split_map()
+
         // clone global_map to avoid drawing splits on it
         var tmp_map = cloneMap(global_map);
 
@@ -151,14 +148,16 @@ function generateMap() {
                 var horizontal_slack = w_space - w_room;
                 var vertical_slack = h_space - h_room;
 
-                var rand_pct_hrz = getRandomInt(3, 6) / 10;
+                var rand_pct_hrz = getRandomInt(1, 9) / 10;
                 // var rand_pct_vrt = 1 - rand_pct_hrz;
-                var rand_pct_vrt = getRandomInt(3, 6) / 10;
+                var rand_pct_vrt = getRandomInt(1, 9) / 10;
                 // correcting javascript floating point weirdness
                 rand_pct_vrt = Math.round(rand_pct_vrt * 10) / 10;
 
-                var r_room = Math.round(r_space + (vertical_slack * rand_pct_vrt));
-                var c_room = Math.round(c_space + (horizontal_slack * rand_pct_hrz));
+                var r_room = Math.round(r_space + (vertical_slack *
+                                                   rand_pct_vrt));
+                var c_room = Math.round(c_space + (horizontal_slack *
+                                                   rand_pct_hrz));
 
                 rooms.push([r_room, c_room, w_room, h_room, (w_room * h_room)]);
             });
@@ -298,6 +297,26 @@ function cloneMap(map) {
     var newMap = [];
     for(var i = 0; i < map.length; i++) {
         newMap.push(map[i].slice());
+    }
+    return newMap;
+}
+
+// returns a copy of the map (or a quadratic sub-part of the map
+// defined by lower- and upper-bounds given, inclusive; not 0-indexed!)
+// lower_bound: defines the row and(!) column of the upper left corner 
+//              of the resulting sub-map
+// upper_bound: defines the row and(!) column of the lower right corner
+//              of the resulting sub-map
+// default (whole map): lower_bound: 1
+//                      upper_bound: map.length
+function copyMap(map, lower_bound, upper_bound) {
+    // set default values if no args are given
+    lower_bound = typeof lower_bound !== 'undefined' ? lower_bound : 1;
+    upper_bound = typeof upper_bound !== 'undefined' ? upper_bound : map.length;
+    console.log("lower: " + lower_bound + "    upper: " + upper_bound);
+    var newMap = [];
+    for(var i = lower_bound-1; i < upper_bound; i++) {
+        newMap.push(map[i].slice(lower_bound-1, upper_bound));
     }
     return newMap;
 }
