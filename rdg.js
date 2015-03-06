@@ -5,51 +5,55 @@ var BLOCK_SIZE = 10;
 var MAP_WIDTH = 0;  // initialized in init() when html has loaded
 var MAP_HEIGHT = 0; // initialized in init() when html has loaded
 
+var SPLIT_TYPE = 2;
+var ROOM_TYPE = 3;
+var DOOR_TYPE = 4
+
 // global dungeon data structure
 var global_map = [];
 
 // use generateFixedMap() to generate below map represented in string
 var map_txt = 
-"1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0\n" +
-"0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1\n" +
-"1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0\n" +
-"0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1\n" +
-"1 0 1 3 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0\n" +
-"0 1 0 3 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1\n" +
-"1 0 1 3 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0\n" +
-"0 1 0 3 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1\n" +
-"1 0 1 3 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0\n" +
-"0 1 0 3 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1\n" +
-"1 0 1 3 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0\n" +
-"0 1 0 3 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1\n" +
-"1 0 1 3 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0\n" +
-"0 1 0 3 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1\n" +
-"1 0 1 3 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0\n" +
-"0 1 0 3 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1\n" +
-"1 0 1 3 3 3 3 3 3 3 3 3 3 4 1 0 1 0 1 0 1 0 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0\n" +
-"0 1 0 3 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1\n" +
-"1 0 1 3 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0\n" +
-"0 1 0 3 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1\n" +
-"1 0 1 3 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0\n" +
-"0 1 0 3 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1\n" +
-"1 0 1 3 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0 4 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0\n" +
-"0 1 0 3 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1\n" +
-"1 0 1 3 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0\n" +
-"0 1 0 3 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1\n" +
-"1 0 1 3 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0\n" +
-"0 1 0 3 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1\n" +
-"1 0 1 3 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0\n" +
-"0 1 0 3 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1\n" +
-"1 0 1 3 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0\n" +
-"0 1 0 3 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1\n" +
-"1 0 1 3 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0\n" +
-"0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1\n" +
-"1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0\n" +
-"0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1\n" +
-"1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0\n" +
-"0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1\n" +
-"1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0\n" +
-"0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1"
+    "1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0\n" +
+    "0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1\n" +
+    "1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0\n" +
+    "0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1\n" +
+    "1 0 1 3 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0\n" +
+    "0 1 0 3 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1\n" +
+    "1 0 1 3 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0\n" +
+    "0 1 0 3 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1\n" +
+    "1 0 1 3 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0\n" +
+    "0 1 0 3 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1\n" +
+    "1 0 1 3 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0\n" +
+    "0 1 0 3 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1\n" +
+    "1 0 1 3 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0\n" +
+    "0 1 0 3 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1\n" +
+    "1 0 1 3 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0\n" +
+    "0 1 0 3 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1\n" +
+    "1 0 1 3 3 3 3 3 3 3 3 3 3 4 1 0 1 0 1 0 1 0 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0\n" +
+    "0 1 0 3 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1\n" +
+    "1 0 1 3 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0\n" +
+    "0 1 0 3 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1\n" +
+    "1 0 1 3 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0\n" +
+    "0 1 0 3 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1\n" +
+    "1 0 1 3 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0 4 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0\n" +
+    "0 1 0 3 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1\n" +
+    "1 0 1 3 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0\n" +
+    "0 1 0 3 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1\n" +
+    "1 0 1 3 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0\n" +
+    "0 1 0 3 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1\n" +
+    "1 0 1 3 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0\n" +
+    "0 1 0 3 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1\n" +
+    "1 0 1 3 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0\n" +
+    "0 1 0 3 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1\n" +
+    "1 0 1 3 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0\n" +
+    "0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1\n" +
+    "1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0\n" +
+    "0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 3 3 3 3 3 3 3 3 3 3 0 1 0 1 0 1 0 1\n" +
+    "1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 3 3 3 3 3 3 3 3 3 3 1 0 1 0 1 0 1 0\n" +
+    "0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1\n" +
+    "1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0\n" +
+    "0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1"
 
 
 function init() {
@@ -80,13 +84,13 @@ function paintMap() {
             case 1:
                 ctx.fillStyle = "#FFFFFF"; // 1: white
                 break;
-            case 2:
+            case SPLIT_TYPE:
                 ctx.fillStyle = "#FF0000"; // 2: red
                 break;
-            case 3:
+            case ROOM_TYPE:
                 ctx.fillStyle = "#0000FF"; // 3: blue
                 break;
-            case 4:
+            case DOOR_TYPE:
                 ctx.fillStyle = "#00FF00"; // 4: green
                 break;
             default: // 1
@@ -123,8 +127,8 @@ function generateFixedMap() {
 
     for (var i = 0; i < temp_map_array.length; i++) {
         global_map[i] = temp_map_array[i].split(" ").map(
-	    function(i) { return parseInt(i,10) }
-	);
+            function(i) { return parseInt(i,10) }
+        );
     }
 }
 
@@ -142,75 +146,75 @@ function generateMap() {
         // clone global_map to avoid drawing splits on it
         var tmp_map = cloneMap(global_map);
 
-	// reduce tmp_map by 4 rows and 4 columns to make sure rooms
-	// are created with distance 2 to the map edges, to still allow for a 
-	// corridor to run along the edges at all times
-	var corridor_margin = 2;
-	tmp_map = copyMap(tmp_map, 
-			  1, 
-			  tmp_map.length - (2 * corridor_margin));
+        // reduce tmp_map by 4 rows and 4 columns to make sure rooms
+        // are created with distance 2 to the map edges, to still allow for a 
+        // corridor to run along the edges at all times
+        var corridor_margin = 2;
+        tmp_map = copyMap(tmp_map, 
+                          1, 
+                          tmp_map.length - (2 * corridor_margin));
 
         split_map(6, tmp_map); // 6 splits; 7 rooms
         update_spaces(tmp_map); // updates 'spaces'-array based on splits
         create_rooms(); // fills 'rooms'-array
-	create_doors_in_rooms(rooms);
+        create_doors_in_rooms(rooms);
 
         // update global_map to include created rooms, correcting for the
-	// skewing of the tmp_map to leave room at the edges of the
-	// map for eventual corridors (addition of corridor_margin)
+        // skewing of the tmp_map to leave room at the edges of the
+        // map for eventual corridors (addition of corridor_margin)
         rooms.forEach(function(r) {
 
-	    var cm = corridor_margin;
+            var cm = corridor_margin;
 
-	    // correcting room & door coordinates to recover from the
-	    // skewing of the tmp_map relative to global_map, related
-	    // to the corridor-margin around the edges of the map
-	    r[0] += cm;
-	    r[1] += cm;
+            // correcting room & door coordinates to recover from the
+            // skewing of the tmp_map relative to global_map, related
+            // to the corridor-margin around the edges of the map
+            r[0] += cm;
+            r[1] += cm;
 
             var r_rm = r[0];
             var c_rm = r[1];
             var w_rm = r[2];
             var h_rm = r[3];
-	    var doors_rm = r[5];
-	    // include room 'body' on map
+            var doors_rm = r[5];
+            // include room 'body' on map
             for(var i = r_rm; i < (r_rm + h_rm); i++) {
                 for (var j = c_rm; j < (c_rm + w_rm); j++) {
-                    global_map[i][j] = 3;
+                    global_map[i][j] = ROOM_TYPE;
                 }
             }
-	    // include room doors on map
-	    doors_rm.forEach(function(door) {
-		// adding cm to correct state of door-coord for corridor_margin
-		var door_r = door[0] += cm;
-		var door_c = door[1] += cm;
-		global_map[door_r][door_c] = 4;
-	    });
+            // include room doors on map
+            doors_rm.forEach(function(door) {
+                // adding cm to correct state of door-coord for corridor_margin
+                var door_r = door[0] += cm;
+                var door_c = door[1] += cm;
+                global_map[door_r][door_c] = DOOR_TYPE;
+            });
         });
 
-	// return 'rooms'-array
-	return rooms;
+        // return 'rooms'-array
+        return rooms;
 
-	
-	// modifies rooms in given array to include doors, by pushing
-	// a list of doors on each room-specification-array
-	// result: list with room-elements: 
-	//         [row,col,width,height,area,[doors-list]]
-	// where [doors-list] contains elements:
-	//          [[door1_row, door2_col], [door2_row, door2_col], ...]
-	function create_doors_in_rooms(rooms_array) {
-	    rooms_array.forEach(function(room) {
-		var ul_r = room[0];
-		var ul_c = room[1];
+        
+        // modifies rooms in given array to include doors, by pushing
+        // a list of doors on each room-specification-array
+        // result: list with room-elements: 
+        //         [row,col,width,height,area,[doors-list]]
+        // where [doors-list] contains elements:
+        //          [[door1_row, door2_col], [door2_row, door2_col], ...]
+        function create_doors_in_rooms(rooms_array) {
+            rooms_array.forEach(function(room) {
+                var ul_r = room[0];
+                var ul_c = room[1];
 
-		var room_doors = [];
-		// create a room in upper-left corner of each room
-		room_doors.push([ul_r, ul_c]);
+                var room_doors = [];
+                // create a room in upper-left corner of each room
+                room_doors.push([ul_r, ul_c]);
 
-		// push the list of doors on the room-specification
-		room.push(room_doors);
-	    });
-	}
+                // push the list of doors on the room-specification
+                room.push(room_doors);
+            });
+        }
 
         // create rooms based on spaces
         function create_rooms() {
@@ -259,8 +263,8 @@ function generateMap() {
             // clear spaces before refilling
             spaces = [];
 
-	    arg_map_height = arg_map.length;
-	    arg_map_width = arg_map[0].length;
+            arg_map_height = arg_map.length;
+            arg_map_width = arg_map[0].length;
 
             spaces_upper_left_corners.forEach(function(curr_corner) {
                 var corner_row = curr_corner[0];
@@ -269,7 +273,7 @@ function generateMap() {
 
                 for (var i = corner_row; i < arg_map_height; i++) {
                     if (!area_found) {
-                        if (arg_map[i][corner_col] == 2 
+                        if (arg_map[i][corner_col] == SPLIT_TYPE 
                             || i == arg_map_height - 1) {
                             // horizontal split found
 
@@ -280,7 +284,7 @@ function generateMap() {
 
                             for (var j = corner_col; j < arg_map_width; j++) {
                                 if (!area_found) {
-                                    if (arg_map[i-1][j] == 2
+                                    if (arg_map[i-1][j] == SPLIT_TYPE
                                         || j == arg_map_width - 1) {
                                         // vertical split found
 
@@ -347,7 +351,7 @@ function generateMap() {
 
                     // update map matrix to reflect split
                     for (var i = c_biggest; i < c_biggest + w_biggest; i++) {
-                        map_to_split[split_pos_row - 1][i] = 2;
+                        map_to_split[split_pos_row - 1][i] = SPLIT_TYPE;
                     }
                 } else {
                     // relative to biggest space
@@ -363,7 +367,7 @@ function generateMap() {
 
                     // update map matrix to reflect split
                     for (var i = r_biggest; i < r_biggest + h_biggest; i++) {
-                        map_to_split[i][split_pos_col - 1] = 2;
+                        map_to_split[i][split_pos_col - 1] = SPLIT_TYPE;
                     }
                 }
 
