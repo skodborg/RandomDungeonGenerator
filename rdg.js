@@ -105,11 +105,21 @@ function generateMap() {
         // clone global_map to avoid drawing splits on it
         var tmp_map = cloneMap(global_map);
 
+	// reduce tmp_map by 4 rows and 4 columns to make sure rooms
+	// are created with distance 2 to the map edges, to still allow for a 
+	// corridor to run along the edges at all times
+	var corridor_margin = 2;
+	tmp_map = copyMap(tmp_map, 
+			  1, 
+			  tmp_map.length - (2 * corridor_margin));
+
         split_map(7, tmp_map); // 6 splits; 7 rooms
         update_spaces(tmp_map); // updates 'spaces'-array based on splits
         create_rooms(); // fills 'rooms'-array
 
-        // update global_map to include created rooms
+        // update global_map to include created rooms, correcting for the
+	// skewing of the tmp_map to leave room at the edges of the
+	// map for eventual corridors (addition of corridor_margin)
         rooms.forEach(function(r) {
             var r_rm = r[0];
             var c_rm = r[1];
@@ -117,7 +127,7 @@ function generateMap() {
             var h_rm = r[3];
             for(var i = r_rm; i < (r_rm + h_rm); i++) {
                 for (var j = c_rm; j < (c_rm + w_rm); j++) {
-                    global_map[i][j] = 3;
+                    global_map[i + corridor_margin][j + corridor_margin] = 3;
                 }
             }
         });
@@ -169,30 +179,33 @@ function generateMap() {
             // clear spaces before refilling
             spaces = [];
 
+	    arg_map_height = arg_map.length;
+	    arg_map_width = arg_map[0].length;
+
             spaces_upper_left_corners.forEach(function(curr_corner) {
                 var corner_row = curr_corner[0];
                 var corner_col = curr_corner[1];
                 var area_found = false;
 
-                for (var i = corner_row; i < MAP_HEIGHT; i++) {
+                for (var i = corner_row; i < arg_map_height; i++) {
                     if (!area_found) {
                         if (arg_map[i][corner_col] == 2 
-                            || i == MAP_HEIGHT - 1) {
+                            || i == arg_map_height - 1) {
                             // horizontal split found
 
                             // off-by-1 at map end
-                            if (i == MAP_HEIGHT - 1) { i++; } 
+                            if (i == arg_map_height - 1) { i++; } 
 
                             var curr_space_height = i - corner_row;
 
-                            for (var j = corner_col; j < MAP_WIDTH; j++) {
+                            for (var j = corner_col; j < arg_map_width; j++) {
                                 if (!area_found) {
                                     if (arg_map[i-1][j] == 2
-                                        || j == MAP_WIDTH - 1) {
+                                        || j == arg_map_width - 1) {
                                         // vertical split found
 
                                         // off-by-1 at map end
-                                        if (j == MAP_WIDTH - 1) { j++; } 
+                                        if (j == arg_map_width - 1) { j++; } 
 
                                         area_found = true;
                                         var curr_space_width = j - corner_col; 
