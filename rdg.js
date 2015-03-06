@@ -294,11 +294,7 @@ function generateMap() {
 }
 
 function cloneMap(map) {
-    var newMap = [];
-    for(var i = 0; i < map.length; i++) {
-        newMap.push(map[i].slice());
-    }
-    return newMap;
+    return copyMap(map);
 }
 
 // returns a copy of the map (or a quadratic sub-part of the map
@@ -313,7 +309,7 @@ function copyMap(map, lower_bound, upper_bound) {
     // set default values if no args are given
     lower_bound = typeof lower_bound !== 'undefined' ? lower_bound : 1;
     upper_bound = typeof upper_bound !== 'undefined' ? upper_bound : map.length;
-    console.log("lower: " + lower_bound + "    upper: " + upper_bound);
+
     var newMap = [];
     for(var i = lower_bound-1; i < upper_bound; i++) {
         newMap.push(map[i].slice(lower_bound-1, upper_bound));
