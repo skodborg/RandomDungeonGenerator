@@ -63,7 +63,7 @@ function init() {
     MAP_WIDTH = 
         document.getElementById("canvas").getAttribute("width") / BLOCK_SIZE;
 
-    generateFixedMap();
+    // generateFixedMap();
     generateMap();
     paintMap();
 }
@@ -92,6 +92,9 @@ function paintMap() {
                 break;
             case DOOR_TYPE:
                 ctx.fillStyle = "#00FF00"; // 4: green
+                break;
+            case 5:
+                ctx.fillStyle = "#FF00FF"; // 5: magenta
                 break;
             default: // 1
                 ctx.fillStyle = "#000000"; // default: black
@@ -136,6 +139,109 @@ function generateMap() {
 
     init_map(); // MAP_WIDTH * MAP_HEIGHT
     var rooms = generateRooms();
+    generateCorridors(rooms);
+
+    // TODO: refactor heavily!
+    function generateCorridors(rooms) {
+
+        // clone global_map to avoid drawing on it
+        // var tmp_map = cloneMap(global_map);
+        var tmp_map = global_map; // DELETE, replace by above????
+
+        var room1 = rooms[0];
+        var doors1 = room1[5];
+        var door1 = doors1[0];
+
+        var room2 = rooms[1];
+        var doors2 = room2[5];
+        var door2 = doors2[0];
+
+        var corridor_coords = [];
+
+        corridor_coords.push(door1);
+
+        create_corridor();
+
+        function create_corridor() {
+            var curr_coord = corridor_coords[corridor_coords.length-1];
+            
+            var temp = get_coords_of_surrounding(curr_coord);
+            for (var i = 0; i < temp.length; i++) {
+                if (temp[i].equals(door2)) {
+                    return;
+                }
+            }
+
+            temp = filter_valid_fields(temp);
+            temp = add_manhattan_heuristics(temp, door2);
+
+            var heuristic_idx = 2;
+            var best_next_coord = temp[0];
+            for (var i = 0; i < temp.length; i++) {
+                if (best_next_coord[heuristic_idx] > temp[i][heuristic_idx]) {
+                    best_next_coord = temp[i];
+                }
+            }
+            tmp_map[best_next_coord[0]][best_next_coord[1]] = 5;
+            corridor_coords.push(best_next_coord);
+
+            create_corridor();
+
+            // pull front coord
+            // - stop if door2 is reached
+            // decide on best next step
+            // call recursively
+        }
+
+        function add_manhattan_heuristics(coords_array, target_coord) {
+            var result = [];
+            var target_row = target_coord[0];
+            var target_col = target_coord[1];
+
+            for (var i = 0; i < coords_array.length; i++) {
+                var c = coords_array[i];
+                var row = c[0];
+                var col = c[1];
+                var heuristic_val = Math.abs(target_row - row) +
+                    Math.abs(target_col - col);
+                result.push([row, col, heuristic_val]);
+            }
+            return result;
+        }
+
+        function filter_valid_fields(coords_array) {
+
+            var result = [];
+            for (var i = 0; i < coords_array.length; i++) {
+                var c = coords_array[i];
+                var entry = tmp_map[c[0]][c[1]];
+                switch(entry) {
+                case ROOM_TYPE:
+                    // filter; do not include
+                    break;
+                case DOOR_TYPE:
+                    break;
+                case 5:
+                    // TODO: Do not step on previous fields in this corridor.
+		    //       This is a hack for the base-case of 1 corridor
+		    //       to avoid looping infinitely
+                    break;
+                default:
+                    result.push(c);
+                }
+            }
+            return result;
+        }
+
+        function get_coords_of_surrounding(center_coords) {
+            var r = center_coords[0];
+            var c = center_coords[1];
+            return [[r-1, c],
+                    [r+1, c],
+                    [r, c-1],
+                    [r, c+1]];
+        }
+    }
 
     function generateRooms() {
 
@@ -420,3 +526,25 @@ function getRandomInt(min, max) {
     return Math.floor(Math.random() * (fmax - cmin + 1)) + cmin;
 }
 
+// attach the .equals method to Array's prototype to call it on any array
+Array.prototype.equals = function(array) {
+    if (!array)
+	return false;
+    if (this.length != array.length)
+        return false;
+
+    // iterate through content
+    var l = this.length;
+    for (var i = 0; i < l; i++) {
+        // Check if we have nested arrays
+        if (this[i] instanceof Array && array[i] instanceof Array) {
+            // recurse into the nested arrays
+            if (!this[i].equals(array[i]))
+                return false;       
+        }           
+        else if (this[i] != array[i]) { 
+            return false;   
+        }           
+    }       
+    return true;
+}  
