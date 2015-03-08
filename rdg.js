@@ -7,7 +7,8 @@ var MAP_HEIGHT = 0; // initialized in init() when html has loaded
 
 var SPLIT_TYPE = 2;
 var ROOM_TYPE = 3;
-var DOOR_TYPE = 4
+var DOOR_TYPE = 4;
+var CORRIDOR_TYPE = 5;
 
 // global dungeon data structure
 var global_map = [];
@@ -93,7 +94,7 @@ function paintMap() {
             case DOOR_TYPE:
                 ctx.fillStyle = "#00FF00"; // 4: green
                 break;
-            case 5:
+            case CORRIDOR_TYPE:
                 ctx.fillStyle = "#FF00FF"; // 5: magenta
                 break;
             default: // 1
@@ -141,12 +142,10 @@ function generateMap() {
     var rooms = generateRooms();
     generateCorridors(rooms);
 
-    // TODO: refactor heavily!
     function generateCorridors(rooms) {
 
         // clone global_map to avoid drawing on it
-        // var tmp_map = cloneMap(global_map);
-        var tmp_map = global_map; // DELETE, replace by above????
+        var tmp_map = cloneMap(global_map);
 
         var room1 = rooms[0];
         var doors1 = room1[5];
@@ -161,9 +160,14 @@ function generateMap() {
 
         create_corridor();
 
+	// update global_map to reflect generated corridors
+	global_map = tmp_map;
+
         function create_corridor() {
+
+            // pull current and surrounding coordinates
             var curr_coord = corridor_coords[corridor_coords.length-1];
-            
+
             var temp = get_coords_of_surrounding(curr_coord);
             for (var i = 0; i < temp.length; i++) {
                 if (temp[i].equals(door2)) {
@@ -174,6 +178,7 @@ function generateMap() {
             temp = filter_valid_fields(temp);
             temp = add_manhattan_heuristics(temp, door2);
 
+            // determine best next step, based on heuristics
             var heuristic_idx = 2;
             var best_next_coord = temp[0];
             for (var i = 0; i < temp.length; i++) {
@@ -181,70 +186,79 @@ function generateMap() {
                     best_next_coord = temp[i];
                 }
             }
-            tmp_map[best_next_coord[0]][best_next_coord[1]] = 5;
+            tmp_map[best_next_coord[0]][best_next_coord[1]] = CORRIDOR_TYPE;
             corridor_coords.push(best_next_coord);
 
-            create_corridor();
-
-            // pull front coord
-            // - stop if door2 is reached
-            // decide on best next step
             // call recursively
+            create_corridor();
         }
 
+        // determine heuristically estimated distance from every coordinate in
+        // coords_array to target_coord, and return new array with all the 
+	// coordinates and their heuristic-value
+        // heuristic-value 
         function add_manhattan_heuristics(coords_array, target_coord) {
             var result = [];
             var target_row = target_coord[0];
             var target_col = target_coord[1];
 
             for (var i = 0; i < coords_array.length; i++) {
-                var c = coords_array[i];
-                var row = c[0];
-                var col = c[1];
-                var heuristic_val = Math.abs(target_row - row) +
-                    Math.abs(target_col - col);
-                result.push([row, col, heuristic_val]);
+                var ci = coords_array[i];
+                var ci_row = ci[0];
+                var ci_col = ci[1];
+                var heuristic_val = 
+                    Math.abs(target_row - ci_row) +
+                    Math.abs(target_col - ci_col);
+
+                result.push([ci_row, ci_col, heuristic_val]);
             }
+
             return result;
         }
 
+	// return a new array of all the fields in coords_array that are
+	// valid to possibly walk (no room-wall, no unintended door etc.)
         function filter_valid_fields(coords_array) {
-
             var result = [];
             for (var i = 0; i < coords_array.length; i++) {
-                var c = coords_array[i];
-                var entry = tmp_map[c[0]][c[1]];
+                var ci = coords_array[i];
+                var entry = tmp_map[ci[0]][ci[1]];
                 switch(entry) {
                 case ROOM_TYPE:
                     // filter; do not include
                     break;
                 case DOOR_TYPE:
                     break;
-                case 5:
+                case CORRIDOR_TYPE:
                     // Check that we have not crossed our own way!
                     // We should never tread the same corridor field twice 
                     // on our way from A to B
-                    var c_r = c[0];
-                    var c_c = c[1];
+		    // - compare current valid fields with previous fields
+		    //   on this same route; invalidate if already walked upon
+                    var ci_r = ci[0];
+                    var ci_c = ci[1];
 
                     var contained = false;
                     for (var j = 0; j < corridor_coords.length; j++) {
                         var corr_c = corridor_coords[j];
-                        if (corr_c[0] == c_r &&
-                            corr_c[1] == c_c) {
+			var corr_cRow = corr_c[0];
+			var corr_cCol = corr_c[1];
+                        if (corr_cRow == ci_r &&
+                            corr_cCol == ci_c) {
                             contained = true;
                         }
                     }
-                    if (!contained) { result.push(c); }
+                    if (!contained) { result.push(ci); }
                     break;
 
                 default:
-                    result.push(c);
+                    result.push(ci);
                 }
             }
             return result;
         }
 
+	// returns a list of N,S,E,W coordinates, relative to center_coords
         function get_coords_of_surrounding(center_coords) {
             var r = center_coords[0];
             var c = center_coords[1];
