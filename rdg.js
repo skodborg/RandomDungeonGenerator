@@ -262,10 +262,14 @@ function generateMap() {
         function get_coords_of_surrounding(center_coords) {
             var r = center_coords[0];
             var c = center_coords[1];
-            return [[r-1, c],
-                    [r+1, c],
-                    [r, c-1],
-                    [r, c+1]];
+	    var result_coords = [];
+
+	    if (r > 0) { result_coords.push([r-1, c]); }
+	    if (r < MAP_WIDTH-1) { result_coords.push([r+1, c]); }
+	    if (c > 0) { result_coords.push([r, c-1]); }
+	    if (c < MAP_HEIGHT-1) { result_coords.push([r, c+1]); }
+
+	    return result_coords;
         }
     }
 
