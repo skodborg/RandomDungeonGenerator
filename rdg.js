@@ -338,7 +338,33 @@ function generateMap() {
             rooms_array.forEach(function(room) {
                 var ul_r = room[0];
                 var ul_c = room[1];
+		var room_w = room[2];
+		var room_h = room[3];
 
+		// decide which of the four walls to place door upon
+		// North:1, East:2, South:3, West:4
+		var wall = getRandomInt(1,4);
+		
+		switch(wall) {
+		case 1:
+		    ul_c += getRandomInt(0, room_w-1);
+		    break;
+		case 2:
+		    ul_r += getRandomInt(0, room_h-1);
+		    break;
+		case 3:
+		    // ul_r += room_h-1;
+		    ul_c += getRandomInt(0, room_w-1);
+		    break;
+		case 4:
+		    ul_c += room_w-1;
+		    ul_r += getRandomInt(0, room_h-1);;
+		    break;
+		default:
+		    // upper left corner; ul_r and ul_c are left unmodified
+		    break;
+		}
+		
                 var room_doors = [];
                 // create a room in upper-left corner of each room
                 room_doors.push([ul_r, ul_c]);
