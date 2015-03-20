@@ -1,7 +1,7 @@
 window.onload = init;
 
 // constants
-var BLOCK_SIZE = 10;
+var BLOCK_SIZE = 5;
 var MAP_WIDTH = 0;  // initialized in init() when html has loaded
 var MAP_HEIGHT = 0; // initialized in init() when html has loaded
 
@@ -9,6 +9,8 @@ var SPLIT_TYPE = 2;
 var ROOM_TYPE = 3;
 var DOOR_TYPE = 4;
 var CORRIDOR_TYPE = 5;
+
+var OFF_BY_1 = 1;
 
 // global dungeon data structure
 var global_map = [];
@@ -140,7 +142,7 @@ function generateMap() {
 
     init_map(); // MAP_WIDTH * MAP_HEIGHT
     var rooms = generateRooms();
-    generateCorridors(rooms);
+    // generateCorridors(rooms);
 
     function generateCorridors(rooms) {
 
@@ -160,8 +162,8 @@ function generateMap() {
 
         create_corridor();
 
-	// update global_map to reflect generated corridors
-	global_map = tmp_map;
+        // update global_map to reflect generated corridors
+        global_map = tmp_map;
 
         function create_corridor() {
 
@@ -195,7 +197,7 @@ function generateMap() {
 
         // determine heuristically estimated distance from every coordinate in
         // coords_array to target_coord, and return new array with all the 
-	// coordinates and their heuristic-value
+        // coordinates and their heuristic-value
         // heuristic-value 
         function add_manhattan_heuristics(coords_array, target_coord) {
             var result = [];
@@ -216,8 +218,8 @@ function generateMap() {
             return result;
         }
 
-	// return a new array of all the fields in coords_array that are
-	// valid to possibly walk (no room-wall, no unintended door etc.)
+        // return a new array of all the fields in coords_array that are
+        // valid to possibly walk (no room-wall, no unintended door etc.)
         function filter_valid_fields(coords_array) {
             var result = [];
             for (var i = 0; i < coords_array.length; i++) {
@@ -233,16 +235,16 @@ function generateMap() {
                     // Check that we have not crossed our own way!
                     // We should never tread the same corridor field twice 
                     // on our way from A to B
-		    // - compare current valid fields with previous fields
-		    //   on this same route; invalidate if already walked upon
+                    // - compare current valid fields with previous fields
+                    //   on this same route; invalidate if already walked upon
                     var ci_r = ci[0];
                     var ci_c = ci[1];
 
                     var contained = false;
                     for (var j = 0; j < corridor_coords.length; j++) {
                         var corr_c = corridor_coords[j];
-			var corr_cRow = corr_c[0];
-			var corr_cCol = corr_c[1];
+                        var corr_cRow = corr_c[0];
+                        var corr_cCol = corr_c[1];
                         if (corr_cRow == ci_r &&
                             corr_cCol == ci_c) {
                             contained = true;
@@ -258,18 +260,18 @@ function generateMap() {
             return result;
         }
 
-	// returns a list of N,S,E,W coordinates, relative to center_coords
+        // returns a list of N,S,E,W coordinates, relative to center_coords
         function get_coords_of_surrounding(center_coords) {
             var r = center_coords[0];
             var c = center_coords[1];
-	    var result_coords = [];
+            var result_coords = [];
 
-	    if (r > 0) { result_coords.push([r-1, c]); }
-	    if (r < MAP_WIDTH-1) { result_coords.push([r+1, c]); }
-	    if (c > 0) { result_coords.push([r, c-1]); }
-	    if (c < MAP_HEIGHT-1) { result_coords.push([r, c+1]); }
+            if (r > 0) { result_coords.push([r-1, c]); }
+            if (r < MAP_WIDTH-1) { result_coords.push([r+1, c]); }
+            if (c > 0) { result_coords.push([r, c-1]); }
+            if (c < MAP_HEIGHT-1) { result_coords.push([r, c+1]); }
 
-	    return result_coords;
+            return result_coords;
         }
     }
 
@@ -279,18 +281,15 @@ function generateMap() {
         var spaces = []; // elements: [row,col,width,height,area]
         var spaces_upper_left_corners = [[0,0]]; // state updated in split_map()
 
-        // clone global_map to avoid drawing splits on it
-        var tmp_map = cloneMap(global_map);
-
         // reduce tmp_map by 4 rows and 4 columns to make sure rooms
         // are created with distance 2 to the map edges, to still allow for a 
         // corridor to run along the edges at all times
         var corridor_margin = 2;
-        tmp_map = copyMap(tmp_map, 
-                          1, 
-                          tmp_map.length - (2 * corridor_margin));
+        var tmp_map = copyMap(global_map, 
+                              1, 
+                              global_map.length - (2 * corridor_margin));
 
-        split_map(6, tmp_map); // 6 splits; 7 rooms
+        split_map(15, tmp_map); // 6 splits; 7 rooms
         update_spaces(tmp_map); // updates 'spaces'-array based on splits
         create_rooms(); // fills 'rooms'-array
         create_doors_in_rooms(rooms);
@@ -342,33 +341,40 @@ function generateMap() {
             rooms_array.forEach(function(room) {
                 var ul_r = room[0];
                 var ul_c = room[1];
-		var room_w = room[2];
-		var room_h = room[3];
+                var room_w = room[2];
+                var room_h = room[3];
 
-		// decide which of the four walls to place door upon
-		// North:1, East:2, South:3, West:4
-		var wall = getRandomInt(1,4);
-		
-		switch(wall) {
-		case 1:
-		    ul_c += getRandomInt(0, room_w-1);
-		    break;
-		case 2:
-		    ul_r += getRandomInt(0, room_h-1);
-		    break;
-		case 3:
-		    // ul_r += room_h-1;
-		    ul_c += getRandomInt(0, room_w-1);
-		    break;
-		case 4:
-		    ul_c += room_w-1;
-		    ul_r += getRandomInt(0, room_h-1);;
-		    break;
-		default:
-		    // upper left corner; ul_r and ul_c are left unmodified
-		    break;
-		}
-		
+                // decide which of the four walls to place door upon
+                // North:1, East:2, South:3, West:4
+                var wall = getRandomInt(1,4);
+
+                var NO_DOOR_IN_CORNER = 1;
+
+
+                switch(wall) {
+                case 1:
+                    ul_c += getRandomInt(NO_DOOR_IN_CORNER, 
+                                         room_w - NO_DOOR_IN_CORNER - OFF_BY_1);
+                    break;
+                case 2:
+                    ul_r += getRandomInt(NO_DOOR_IN_CORNER, 
+					 room_h - NO_DOOR_IN_CORNER - OFF_BY_1);
+                    break;
+                case 3:
+                    ul_r += room_h - OFF_BY_1;
+                    ul_c += getRandomInt(NO_DOOR_IN_CORNER, 
+					 room_w - NO_DOOR_IN_CORNER - OFF_BY_1);
+                    break;
+                case 4:
+                    ul_c += room_w - OFF_BY_1;
+                    ul_r += getRandomInt(NO_DOOR_IN_CORNER, 
+					 room_h - NO_DOOR_IN_CORNER - OFF_BY_1);
+                    break;
+                default:
+                    // upper left corner; ul_r and ul_c are left unmodified
+                    break;
+                }
+                
                 var room_doors = [];
                 // create a room in upper-left corner of each room
                 room_doors.push([ul_r, ul_c]);
@@ -386,11 +392,10 @@ function generateMap() {
                 var w_space = space[2];
                 var h_space = space[3];
 
-                // room: 30-70% of width of space
-                //       100%-width% of height of space
-                var rand_pct_w = getRandomInt(5, 8) / 10;
-                // var rand_pct_h = 1-rand_pct_w;
-                var rand_pct_h = getRandomInt(5, 8) / 10;
+                // room: 40-70% of width of space
+                //       40-70% of height of space
+                var rand_pct_w = getRandomInt(4, 7) / 10;
+                var rand_pct_h = getRandomInt(4, 7) / 10;
                 // correcting javascript floating point weirdness
                 rand_pct_h = Math.round(rand_pct_h * 10) / 10;
 
@@ -401,19 +406,44 @@ function generateMap() {
                 //   axis is added to the coordinate of the upper left
                 //   corner of the space to determine the coordinate of
                 //   the room
-                var horizontal_slack = w_space - w_room;
-                var vertical_slack = h_space - h_room;
+                var EDGE_MARGIN = 2;
+                var horizontal_slack = w_space - w_room - EDGE_MARGIN;
+                var vertical_slack = h_space - h_room - EDGE_MARGIN;
 
-                var rand_pct_hrz = getRandomInt(1, 9) / 10;
-                // var rand_pct_vrt = 1 - rand_pct_hrz;
+                // correct room width and height to be an odd size
+                // - increase/decrease by 1 if not, based on slack values
+                if (w_room % 2 != 1) {
+                    if (horizontal_slack >= w_room) {
+                        w_room++;
+                    } else {
+                        w_room--;
+                    }
+                }
+                if (h_room % 2 != 1) {
+                    if (vertical_slack >= h_room) {
+                        h_room++;
+                    } else {
+                        h_room--;
+                    }
+                }
+
+
+                var rand_pct_hrz = getRandomInt(1, 9) / 10; // 10-90%
                 var rand_pct_vrt = getRandomInt(1, 9) / 10;
-                // correcting javascript floating point weirdness
-                rand_pct_vrt = Math.round(rand_pct_vrt * 10) / 10;
 
-                var r_room = Math.round(r_space + (vertical_slack *
-                                                   rand_pct_vrt));
-                var c_room = Math.round(c_space + (horizontal_slack *
-                                                   rand_pct_hrz));
+
+                var AVOID_EDGE = 1;
+                var r_room = Math.round(r_space + AVOID_EDGE + 
+                                        (vertical_slack *
+                                         rand_pct_vrt));
+                var c_room = Math.round(c_space + AVOID_EDGE + 
+                                        (horizontal_slack *
+                                         rand_pct_hrz));
+
+                // make sure all rooms are placed with an upper-left corner
+                // on an even coordinate: (r,c) both being even numbers
+                if (r_room % 2 != 0) { r_room++; }
+                if (c_room % 2 != 0) { c_room++; }
 
                 rooms.push([r_room, c_room, w_room, h_room, (w_room * h_room)]);
             });
