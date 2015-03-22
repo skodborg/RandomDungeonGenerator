@@ -148,7 +148,7 @@ function generateMap() {
     function generateMaze() {
         
         var coords_stack = [];
-        var neighbours_to_check = [];
+        var fields_to_check = [];
         var step_size = 2;
 
         // fill coords_stack with all even coordinates to check
@@ -160,13 +160,13 @@ function generateMap() {
         coords_stack = filter_valid_fields(coords_stack, global_map);
         coords_stack.shuffle();
 
-	var counter = 0;
+        var counter = 0;
 
         dfs(coords_stack.pop(), global_map);
 
         function dfs(start_coord, arg_map) {
 
-	    if (start_coord === undefined) { return; } // bail out
+            if (start_coord === undefined) { return; } // bail out
 
             var cr = start_coord[0];
             var cc = start_coord[1];
@@ -176,12 +176,14 @@ function generateMap() {
             valid_neighbours = filter_valid_fields(get_coords_of_surrounding(start_coord),
                                                    arg_map);
 
-            if (valid_neighbours.length == 0) {
-		if (neighbours_to_check.length == 0) {
-		    return dfs(coords_stack.pop(), arg_map);
-		}
-		return dfs(neighbours_to_check.pop(), arg_map);
-	    }
+            // if multiple neighbours, make sure to exhaust
+            if (valid_neighbours.length > 1) {
+                fields_to_check.push(start_coord);
+            }
+            
+            else if (valid_neighbours.length == 0) {
+                return dfs(fields_to_check.pop(), arg_map);
+            }
 
             var rand_neighbour_idx = getRandomInt(0, valid_neighbours.length - 1);
             var rand_neighbour = valid_neighbours[rand_neighbour_idx];
