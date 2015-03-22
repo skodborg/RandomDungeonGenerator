@@ -142,7 +142,131 @@ function generateMap() {
 
     init_map(); // MAP_WIDTH * MAP_HEIGHT
     var rooms = generateRooms();
+    generateMaze();
     // generateCorridors(rooms);
+
+    function generateMaze() {
+        
+        var coords_stack = [];
+        var neighbours_to_check = [];
+        var step_size = 2;
+
+        // fill coords_stack with all even coordinates to check
+        for (var c = 1; c < MAP_WIDTH; c += step_size) {
+            for (var r = 1; r < MAP_HEIGHT; r += step_size) {
+                coords_stack.push([r,c]);
+            }
+        }
+        coords_stack = filter_valid_fields(coords_stack, global_map);
+        coords_stack.shuffle();
+
+	var counter = 0;
+
+        dfs(coords_stack.pop(), global_map);
+
+        function dfs(start_coord, arg_map) {
+
+	    if (start_coord === undefined) { return; } // bail out
+
+            var cr = start_coord[0];
+            var cc = start_coord[1];
+            arg_map[cr][cc] = CORRIDOR_TYPE;
+
+            var valid_neighbours = [];
+            valid_neighbours = filter_valid_fields(get_coords_of_surrounding(start_coord),
+                                                   arg_map);
+
+            if (valid_neighbours.length == 0) {
+		if (neighbours_to_check.length == 0) {
+		    return dfs(coords_stack.pop(), arg_map);
+		}
+		return dfs(neighbours_to_check.pop(), arg_map);
+	    }
+
+            var rand_neighbour_idx = getRandomInt(0, valid_neighbours.length - 1);
+            var rand_neighbour = valid_neighbours[rand_neighbour_idx];
+
+            paint_step(start_coord, rand_neighbour, arg_map);
+
+            function paint_step(from, to, arg_map) {
+                var step_size = 2;
+
+                var r_from = from[0];
+                var c_from = from[1];
+                var r_to = to[0];
+                var c_to = to[1];
+
+                if (r_to - r_from == step_size) {
+                    // stepped south
+                    arg_map[r_from][c_from] = CORRIDOR_TYPE;
+                    arg_map[r_from+1][c_from] = CORRIDOR_TYPE;
+                    arg_map[r_from+2][c_from] = CORRIDOR_TYPE;
+                }
+                else if (r_from - r_to == step_size) {
+                    // stepped north
+                    arg_map[r_from][c_from] = CORRIDOR_TYPE;
+                    arg_map[r_from-1][c_from] = CORRIDOR_TYPE;
+                    arg_map[r_from-2][c_from] = CORRIDOR_TYPE;
+                }
+                else if (c_to - c_from == step_size) {
+                    // stepped east
+                    arg_map[r_from][c_from] = CORRIDOR_TYPE;
+                    arg_map[r_from][c_from+1] = CORRIDOR_TYPE;
+                    arg_map[r_from][c_from+2] = CORRIDOR_TYPE;
+                }
+                else if (c_from - c_to == step_size) {
+                    // stepped west
+                    arg_map[r_from][c_from] = CORRIDOR_TYPE;
+                    arg_map[r_from][c_from-1] = CORRIDOR_TYPE;
+                    arg_map[r_from][c_from-2] = CORRIDOR_TYPE;
+                }
+                else {
+                    console.log("ERROR: Something went wrong while stepping "+
+                                "in dfs when creating maze");
+                }
+                
+            }
+
+            dfs(rand_neighbour, arg_map);
+
+        }
+
+        // returns a list of N,S,E,W coordinates, relative to center_coord
+        function get_coords_of_surrounding(center_coord) {
+            var r = center_coord[0];
+            var c = center_coord[1];
+            var result_coords = [];
+
+            if (r > 1) { result_coords.push([r-2, c]); }
+            if (r < MAP_WIDTH-2) { result_coords.push([r+2, c]); }
+            if (c > 1) { result_coords.push([r, c-2]); }
+            if (c < MAP_HEIGHT-2) { result_coords.push([r, c+2]); }
+
+            return result_coords;
+        }
+
+        // return a new array of all the fields in coords_array that are
+        // valid to possibly walk (no room-wall, no corridor etc.)
+        function filter_valid_fields(coords_array, arg_map) {
+            var result = [];
+            for (var i = 0; i < coords_array.length; i++) {
+                var ci = coords_array[i];
+                var entry = arg_map[ci[0]][ci[1]];
+                switch(entry) {
+                case ROOM_TYPE:
+                    // filter; do not include
+                    break;
+                case DOOR_TYPE:
+                    break;
+                case CORRIDOR_TYPE:
+                    break;
+                default:
+                    result.push(ci);
+                }
+            }
+            return result;
+        }
+    }
 
     function generateCorridors(rooms) {
 
@@ -289,7 +413,7 @@ function generateMap() {
                               1, 
                               global_map.length - (2 * corridor_margin));
 
-        split_map(15, tmp_map); // 6 splits; 7 rooms
+        split_map(15, tmp_map);
         update_spaces(tmp_map); // updates 'spaces'-array based on splits
         create_rooms(); // fills 'rooms'-array
         create_doors_in_rooms(rooms);
@@ -358,17 +482,17 @@ function generateMap() {
                     break;
                 case 2:
                     ul_r += getRandomInt(NO_DOOR_IN_CORNER, 
-					 room_h - NO_DOOR_IN_CORNER - OFF_BY_1);
+                                         room_h - NO_DOOR_IN_CORNER - OFF_BY_1);
                     break;
                 case 3:
                     ul_r += room_h - OFF_BY_1;
                     ul_c += getRandomInt(NO_DOOR_IN_CORNER, 
-					 room_w - NO_DOOR_IN_CORNER - OFF_BY_1);
+                                         room_w - NO_DOOR_IN_CORNER - OFF_BY_1);
                     break;
                 case 4:
                     ul_c += room_w - OFF_BY_1;
                     ul_r += getRandomInt(NO_DOOR_IN_CORNER, 
-					 room_h - NO_DOOR_IN_CORNER - OFF_BY_1);
+                                         room_h - NO_DOOR_IN_CORNER - OFF_BY_1);
                     break;
                 default:
                     // upper left corner; ul_r and ul_c are left unmodified
@@ -441,9 +565,9 @@ function generateMap() {
                                          rand_pct_hrz));
 
                 // make sure all rooms are placed with an upper-left corner
-                // on an even coordinate: (r,c) both being even numbers
-                if (r_room % 2 != 0) { r_room++; }
-                if (c_room % 2 != 0) { c_room++; }
+                // on an odd coordinate: (r,c) both being odd numbers
+                if (r_room % 2 != 1) { r_room++; }
+                if (c_room % 2 != 1) { c_room++; }
 
                 rooms.push([r_room, c_room, w_room, h_room, (w_room * h_room)]);
             });
@@ -570,14 +694,16 @@ function generateMap() {
     // initializes map with defined dimensions, and paints map
     // background grey/white checkered
     function init_map() {
-        var counter = 0;
+        var row_init = 0;
+        var counter = row_init;
         for (var i = 0; i < MAP_HEIGHT; i++) {
             global_map[i] = [];
-            counter++;
+            counter = row_init;
             for (var j = 0; j < MAP_WIDTH; j++) {
                 global_map[i][j] = counter % 2;
                 counter++;
             }
+            row_init = row_init+1 % 2;
         }
     }
 }
@@ -633,4 +759,9 @@ Array.prototype.equals = function(array) {
         }           
     }       
     return true;
-}  
+}
+
+Array.prototype.shuffle = function() {
+    for(var j, x, i = this.length; i; j = Math.floor(Math.random() * i), x = this[--i], this[i] = this[j], this[j] = x);
+    return this;
+}
