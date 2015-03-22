@@ -91,13 +91,13 @@ function paintMap() {
                 ctx.fillStyle = "#FF0000"; // 2: red
                 break;
             case ROOM_TYPE:
-                ctx.fillStyle = "#0000FF"; // 3: blue
+                ctx.fillStyle = "#994C00"; // 3: brown
                 break;
             case DOOR_TYPE:
-                ctx.fillStyle = "#00FF00"; // 4: green
+                ctx.fillStyle = "#FF0000"; // 4: orange
                 break;
             case CORRIDOR_TYPE:
-                ctx.fillStyle = "#FF00FF"; // 5: magenta
+                ctx.fillStyle = "#CC0000"; // 5: dark red
                 break;
             default: // 1
                 ctx.fillStyle = "#000000"; // default: black
@@ -143,7 +143,63 @@ function generateMap() {
     init_map(); // MAP_WIDTH * MAP_HEIGHT
     var rooms = generateRooms();
     generateMaze();
-    // generateCorridors(rooms);
+    connectRoomsWithMaze(global_map);
+
+    function connectRoomsWithMaze(arg_map) {
+        rooms.forEach(function(room) {
+            var ul_r = room[0];
+            var ul_c = room[1];
+            var room_w = room[2];
+            var room_h = room[3];
+
+            // decide which of the four walls to place door upon
+            // North:1, East:2, South:3, West:4
+            var wall = getRandomInt(1,4);
+
+            var NO_DOOR_IN_CORNER = 1;
+            var possible_doors = [];
+
+            switch(wall) {
+            case 1:
+                for (var i = 0; i < room_w; i++) {
+                    if (arg_map[ul_r - 2][ul_c+i] == CORRIDOR_TYPE) {
+                        possible_doors.push([(ul_r-1), (ul_c+i)]);
+                    }
+                }
+                break;
+            case 2:
+                for (var i = 0; i < room_h; i++) {
+                    if (arg_map[ul_r+i][ul_c+room_w+1] == CORRIDOR_TYPE) {
+                        possible_doors.push([(ul_r+i), (ul_c+room_w)]);
+                    }
+                }
+                break;
+            case 3:
+                for (var i = 0; i < room_w; i++) {
+                    if (arg_map[ul_r+room_h+1][ul_c+i] == CORRIDOR_TYPE) {
+                        possible_doors.push([(ul_r+room_h), (ul_c+i)]);
+                    }
+                }
+                break;
+
+            case 4:
+                for (var i = 0; i < room_h; i++) {
+                    if (arg_map[ul_r+i][ul_c-2] == CORRIDOR_TYPE) {
+                        possible_doors.push([(ul_r+i), (ul_c-1)]);
+                    }
+                }
+                break;
+            default:
+                break;
+            }
+
+            var rnd = getRandomInt(0, possible_doors.length-1);
+            var chosen_door = possible_doors[rnd];
+
+            arg_map[chosen_door[0]][chosen_door[1]] = DOOR_TYPE;
+
+        });
+    }
 
     function generateMaze() {
         
@@ -287,7 +343,6 @@ function generateMap() {
         split_map(15, tmp_map);
         update_spaces(tmp_map); // updates 'spaces'-array based on splits
         create_rooms(); // fills 'rooms'-array
-        create_doors_in_rooms(rooms);
 
         // update global_map to include created rooms, correcting for the
         // skewing of the tmp_map to leave room at the edges of the
@@ -313,13 +368,7 @@ function generateMap() {
                     global_map[i][j] = ROOM_TYPE;
                 }
             }
-            // include room doors on map
-            doors_rm.forEach(function(door) {
-                // adding cm to correct state of door-coord for corridor_margin
-                var door_r = door[0] += cm;
-                var door_c = door[1] += cm;
-                global_map[door_r][door_c] = DOOR_TYPE;
-            });
+            
         });
 
         // return 'rooms'-array
@@ -332,6 +381,7 @@ function generateMap() {
         //         [row,col,width,height,area,[doors-list]]
         // where [doors-list] contains elements:
         //          [[door1_row, door2_col], [door2_row, door2_col], ...]
+
         function create_doors_in_rooms(rooms_array) {
             rooms_array.forEach(function(room) {
                 var ul_r = room[0];
@@ -344,7 +394,6 @@ function generateMap() {
                 var wall = getRandomInt(1,4);
 
                 var NO_DOOR_IN_CORNER = 1;
-
 
                 switch(wall) {
                 case 1:
