@@ -146,11 +146,31 @@ function generateMap() {
     connectRoomsWithMaze(global_map);
 
     function connectRoomsWithMaze(arg_map) {
+
+	var attempts = 0;
+	var door_placed = false;
+
         rooms.forEach(function(room) {
+	    // repeat until a door in the room was successfully placed
+	    // or 10 attempts has been made
+	    attempts = 0;
+	    door_placed = false;
+
+	    while (!door_placed && attempts < 10) {
+		door_placed = place_door_helper(room, arg_map);
+		attempts++;
+	    }
+        });
+
+        function place_door_helper(room, arg_map) {
             var ul_r = room[0];
             var ul_c = room[1];
             var room_w = room[2];
             var room_h = room[3];
+
+	    // bailout in case of too small rooms (too many splits or
+	    // too big blocks)
+	    if (room_w <= 0 || room_h <= 0) return true;
 
             // decide which of the four walls to place door upon
             // North:1, East:2, South:3, West:4
@@ -169,6 +189,7 @@ function generateMap() {
                 break;
             case 2:
                 for (var i = 0; i < room_h; i++) {
+                    if (ul_c+room_w+1 >= MAP_WIDTH) continue; // off map
                     if (arg_map[ul_r+i][ul_c+room_w+1] == CORRIDOR_TYPE) {
                         possible_doors.push([(ul_r+i), (ul_c+room_w)]);
                     }
@@ -176,6 +197,7 @@ function generateMap() {
                 break;
             case 3:
                 for (var i = 0; i < room_w; i++) {
+                    if (ul_r+room_h+1 >= MAP_HEIGHT) continue; // off map
                     if (arg_map[ul_r+room_h+1][ul_c+i] == CORRIDOR_TYPE) {
                         possible_doors.push([(ul_r+room_h), (ul_c+i)]);
                     }
@@ -193,13 +215,15 @@ function generateMap() {
                 break;
             }
 
+            if (possible_doors.length == 0) return false;
             var rnd = getRandomInt(0, possible_doors.length-1);
             var chosen_door = possible_doors[rnd];
 
             arg_map[chosen_door[0]][chosen_door[1]] = DOOR_TYPE;
-
-        });
+	    return true;
+        }
     }
+
 
     function generateMaze() {
         
@@ -282,7 +306,7 @@ function generateMap() {
                     console.log("ERROR: Something went wrong while stepping "+
                                 "in dfs when creating maze");
                 }
-                
+
             }
 
             dfs(rand_neighbour, arg_map);
@@ -340,7 +364,7 @@ function generateMap() {
                               1, 
                               global_map.length - (2 * corridor_margin));
 
-        split_map(15, tmp_map);
+        split_map(25, tmp_map);
         update_spaces(tmp_map); // updates 'spaces'-array based on splits
         create_rooms(); // fills 'rooms'-array
 
