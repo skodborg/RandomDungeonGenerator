@@ -4,6 +4,7 @@ window.onload = init;
 var BLOCK_SIZE = 1;
 var MAP_WIDTH = 0;  // initialized in init() when html has loaded
 var MAP_HEIGHT = 0; // initialized in init() when html has loaded
+var NR_ROOMS = 1000;
 
 var SPLIT_TYPE = 2;
 var ROOM_TYPE = 3;
@@ -369,7 +370,7 @@ function generateMap() {
                               1, 
                               global_map.length - (2 * corridor_margin));
 
-        split_map(1000, tmp_map);
+        split_map(NR_ROOMS-1, tmp_map);
         update_spaces(tmp_map); // updates 'spaces'-array based on splits
         create_rooms(); // fills 'rooms'-array
 
