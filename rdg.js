@@ -1,7 +1,7 @@
 window.onload = init;
 
 // constants
-var BLOCK_SIZE = 5;
+var BLOCK_SIZE = 1;
 var MAP_WIDTH = 0;  // initialized in init() when html has loaded
 var MAP_HEIGHT = 0; // initialized in init() when html has loaded
 
@@ -147,19 +147,19 @@ function generateMap() {
 
     function connectRoomsWithMaze(arg_map) {
 
-	var attempts = 0;
-	var door_placed = false;
+        var attempts = 0;
+        var door_placed = false;
 
         rooms.forEach(function(room) {
-	    // repeat until a door in the room was successfully placed
-	    // or 10 attempts has been made
-	    attempts = 0;
-	    door_placed = false;
+            // repeat until a door in the room was successfully placed
+            // or 10 attempts has been made
+            attempts = 0;
+            door_placed = false;
 
-	    while (!door_placed && attempts < 10) {
-		door_placed = place_door_helper(room, arg_map);
-		attempts++;
-	    }
+            while (!door_placed && attempts < 10) {
+                door_placed = place_door_helper(room, arg_map);
+                attempts++;
+            }
         });
 
         function place_door_helper(room, arg_map) {
@@ -168,9 +168,9 @@ function generateMap() {
             var room_w = room[2];
             var room_h = room[3];
 
-	    // bailout in case of too small rooms (too many splits or
-	    // too big blocks)
-	    if (room_w <= 0 || room_h <= 0) return true;
+            // bailout in case of too small rooms (too many splits or
+            // too big blocks)
+            if (room_w <= 0 || room_h <= 0) return true;
 
             // decide which of the four walls to place door upon
             // North:1, East:2, South:3, West:4
@@ -220,7 +220,7 @@ function generateMap() {
             var chosen_door = possible_doors[rnd];
 
             arg_map[chosen_door[0]][chosen_door[1]] = DOOR_TYPE;
-	    return true;
+            return true;
         }
     }
 
@@ -240,9 +240,84 @@ function generateMap() {
         coords_stack = filter_valid_fields(coords_stack, global_map);
         coords_stack.shuffle();
 
-        var counter = 0;
+        dfs_nonrecursive(coords_stack.pop(), global_map);
 
-        dfs(coords_stack.pop(), global_map);
+        function dfs_nonrecursive(start_coord, arg_map) {
+            var fields_to_check = [];
+            var stepping_from = [];
+            fields_to_check.push(start_coord);
+            stepping_from.push(start_coord);
+
+            while(fields_to_check.length > 0) {
+                var coor = fields_to_check.pop();
+                var from = stepping_from.pop();
+                var cr = coor[0];
+                var cc = coor[1];
+
+                var valid_neighbours = [];
+                valid_neighbours = filter_valid_fields(get_coords_of_surrounding(coor),
+                                                       arg_map);
+
+                // if multiple neighbours, make sure to exhaust
+                if (valid_neighbours.length > 1) {
+                    fields_to_check.push(coor);
+                    stepping_from.push(coor);
+                }
+
+                // if no neighbours for current node, break this loop iteration
+                if (valid_neighbours.length == 0) {
+                    continue;
+                }
+
+                var rand_neighbour_idx = getRandomInt(0, valid_neighbours.length-1);
+                var rand_neighbour = valid_neighbours[rand_neighbour_idx];
+
+                paint_step(from, rand_neighbour, arg_map);
+                
+                // update stacks to reflect stepping in a direction
+                fields_to_check.push(rand_neighbour);
+                stepping_from.push(rand_neighbour);
+            }
+        }
+
+        function paint_step(from, to, arg_map) {
+            var step_size = 2;
+
+            var r_from = from[0];
+            var c_from = from[1];
+            var r_to = to[0];
+            var c_to = to[1];
+
+            if (r_to - r_from == step_size) {
+                // stepped south
+                arg_map[r_from][c_from] = CORRIDOR_TYPE;
+                arg_map[r_from+1][c_from] = CORRIDOR_TYPE;
+                arg_map[r_from+2][c_from] = CORRIDOR_TYPE;
+            }
+            else if (r_from - r_to == step_size) {
+                // stepped north
+                arg_map[r_from][c_from] = CORRIDOR_TYPE;
+                arg_map[r_from-1][c_from] = CORRIDOR_TYPE;
+                arg_map[r_from-2][c_from] = CORRIDOR_TYPE;
+            }
+            else if (c_to - c_from == step_size) {
+                // stepped east
+                arg_map[r_from][c_from] = CORRIDOR_TYPE;
+                arg_map[r_from][c_from+1] = CORRIDOR_TYPE;
+                arg_map[r_from][c_from+2] = CORRIDOR_TYPE;
+            }
+            else if (c_from - c_to == step_size) {
+                // stepped west
+                arg_map[r_from][c_from] = CORRIDOR_TYPE;
+                arg_map[r_from][c_from-1] = CORRIDOR_TYPE;
+                arg_map[r_from][c_from-2] = CORRIDOR_TYPE;
+            }
+            else {
+                console.log("ERROR: Something went wrong while stepping "+
+                            "in dfs when creating maze");
+            }
+
+        }
 
         function dfs(start_coord, arg_map) {
 
@@ -364,7 +439,7 @@ function generateMap() {
                               1, 
                               global_map.length - (2 * corridor_margin));
 
-        split_map(25, tmp_map);
+        split_map(1000, tmp_map);
         update_spaces(tmp_map); // updates 'spaces'-array based on splits
         create_rooms(); // fills 'rooms'-array
 
