@@ -1,10 +1,10 @@
 window.onload = init;
 
 // constants
-var BLOCK_SIZE = 1;
+var BLOCK_SIZE = 5;
 var MAP_WIDTH = 0;  // initialized in init() when html has loaded
 var MAP_HEIGHT = 0; // initialized in init() when html has loaded
-var NR_ROOMS = 1000;
+var NR_ROOMS = 25;
 
 var SPLIT_TYPE = 2;
 var ROOM_TYPE = 3;
@@ -142,11 +142,11 @@ function generateFixedMap() {
 function generateMap() {
 
     init_map(); // MAP_WIDTH * MAP_HEIGHT
-    var rooms = generateRooms();
-    generateMaze();
-    connectRoomsWithMaze(global_map);
+    var rooms = generateRooms(global_map);
+    generateMaze(global_map);
+    connectRoomsWithMaze(global_map, rooms);
 
-    function connectRoomsWithMaze(arg_map) {
+    function connectRoomsWithMaze(arg_map, rooms) {
 
         var attempts = 0;
         var door_placed = false;
@@ -226,7 +226,7 @@ function generateMap() {
     }
 
 
-    function generateMaze() {
+    function generateMaze(arg_map) {
         
         var coords_stack = [];
         var fields_to_check = [];
@@ -238,10 +238,10 @@ function generateMap() {
                 coords_stack.push([r,c]);
             }
         }
-        coords_stack = filter_valid_fields(coords_stack, global_map);
+        coords_stack = filter_valid_fields(coords_stack, arg_map);
         coords_stack.shuffle();
 
-        dfs_nonrecursive(coords_stack.pop(), global_map);
+        dfs_nonrecursive(coords_stack.pop(), arg_map);
 
         function dfs_nonrecursive(start_coord, arg_map) {
             var fields_to_check = [];
@@ -356,7 +356,7 @@ function generateMap() {
         }
     }
 
-    function generateRooms() {
+    function generateRooms(arg_map) {
 
         var rooms = []; // elements: [row,col,width,height,area]
         var spaces = []; // elements: [row,col,width,height,area]
@@ -366,15 +366,15 @@ function generateMap() {
         // are created with distance 2 to the map edges, to still allow for a 
         // corridor to run along the edges at all times
         var corridor_margin = 2;
-        var tmp_map = copyMap(global_map, 
+        var tmp_map = copyMap(arg_map, 
                               1, 
-                              global_map.length - (2 * corridor_margin));
+                              arg_map.length - (2 * corridor_margin));
 
         split_map(NR_ROOMS-1, tmp_map);
         update_spaces(tmp_map); // updates 'spaces'-array based on splits
         create_rooms(); // fills 'rooms'-array
 
-        // update global_map to include created rooms, correcting for the
+        // update arg_map to include created rooms, correcting for the
         // skewing of the tmp_map to leave room at the edges of the
         // map for eventual corridors (addition of corridor_margin)
         rooms.forEach(function(r) {
@@ -382,7 +382,7 @@ function generateMap() {
             var cm = corridor_margin;
 
             // correcting room & door coordinates to recover from the
-            // skewing of the tmp_map relative to global_map, related
+            // skewing of the tmp_map relative to arg_map, related
             // to the corridor-margin around the edges of the map
             r[0] += cm;
             r[1] += cm;
@@ -395,7 +395,7 @@ function generateMap() {
             // include room 'body' on map
             for(var i = r_rm; i < (r_rm + h_rm); i++) {
                 for (var j = c_rm; j < (c_rm + w_rm); j++) {
-                    global_map[i][j] = ROOM_TYPE;
+                    arg_map[i][j] = ROOM_TYPE;
                 }
             }
             
