@@ -91,6 +91,7 @@ function generateMap() {
     var dfs_steps_arrays = [];
     generateMaze(global_map);
     connectRoomsWithMaze(global_map, rooms);
+    uncarve_deadends(dfs_steps_arrays);
 
     function connectRoomsWithMaze(arg_map, rooms) {
 
@@ -170,7 +171,6 @@ function generateMap() {
             return true;
         }
     }
-    uncarve_deadends(dfs_steps_arrays);
 
     function uncarve_deadends(dfs_steps_arrays) {
         for (var i = dfs_steps_arrays.length-1; i >=0; i--) {
@@ -311,8 +311,6 @@ function generateMap() {
         }
     }
 
-
-
     function generateMaze(arg_map) {
         
         var coords_stack = [];
@@ -334,10 +332,11 @@ function generateMap() {
         function dfs_nonrecursive(start_coord, arg_map) {
             var fields_to_check = [];
             var stepping_from = [];
+	    var first_run = true;
+            var dfs_steps_current_trace = [];
+
             fields_to_check.push(start_coord);
             stepping_from.push(start_coord);
-
-            var dfs_steps_current_trace = [];
 
             while(fields_to_check.length > 0) {
                 var coor = fields_to_check.pop();
@@ -361,6 +360,10 @@ function generateMap() {
                 // if no neighbours for current node, break this loop iteration
                 if (valid_neighbours.length == 0) {
                     dfs_steps_arrays.push(dfs_steps_current_trace);
+		    if (first_run) {
+			var reversed_trace = cloneMap(dfs_steps_current_trace).reverse();
+			dfs_steps_arrays.push(reversed_trace);
+		    }
                     dfs_steps_current_trace = [];
                     continue;
                 }
