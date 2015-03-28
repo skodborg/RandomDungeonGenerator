@@ -143,6 +143,7 @@ function generateMap() {
 
     init_map(); // MAP_WIDTH * MAP_HEIGHT
     var rooms = generateRooms(global_map);
+    var dfs_steps_arrays = [];
     generateMaze(global_map);
     connectRoomsWithMaze(global_map, rooms);
 
@@ -224,6 +225,147 @@ function generateMap() {
             return true;
         }
     }
+    uncarve_deadends(dfs_steps_arrays);
+
+    function uncarve_deadends(dfs_steps_arrays) {
+        for (var i = dfs_steps_arrays.length-1; i >=0; i--) {
+            var trace = dfs_steps_arrays[i];
+            if (trace.length < 2) { continue; }
+            var prev_c = trace.pop();
+            while (trace.length > 0) {
+                var c = trace.pop();
+
+                var prev_c_row = prev_c[0];
+                var prev_c_col = prev_c[1];
+                var c_row = c[0];
+                var c_col = c[1];
+
+                var row_diff = c_row - prev_c_row;
+                var col_diff = c_col - prev_c_col;
+                
+                if (row_diff > 0) {
+                    // south
+                    if (can_uncarve(prev_c, global_map)) {
+                        globalmap_unpaint(prev_c);
+                        if (can_uncarve([prev_c_row+1, prev_c_col], global_map)) {
+                            globalmap_unpaint([prev_c_row+1, prev_c_col]);
+                        }
+
+                    }
+                }
+                else if (row_diff < 0) {
+                    // north
+                    if (can_uncarve(prev_c, global_map)) {
+                        globalmap_unpaint(prev_c);
+                        if (can_uncarve([prev_c_row-1, prev_c_col], global_map)) {
+                            globalmap_unpaint([prev_c_row-1, prev_c_col]);
+                        }
+
+                    }
+                } 
+                else if (col_diff > 0) {
+		    if (can_uncarve(prev_c, global_map)) {
+			globalmap_unpaint(prev_c);
+			if (can_uncarve([prev_c_row, prev_c_col+1], global_map)) {
+			    globalmap_unpaint([prev_c_row, prev_c_col+1]);
+			}
+
+		    }
+                }
+                else if (col_diff < 0) {
+		    if (can_uncarve(prev_c, global_map)) {
+			globalmap_unpaint(prev_c);
+			if (can_uncarve([prev_c_row, prev_c_col-1], global_map)) {
+			    globalmap_unpaint([prev_c_row, prev_c_col-1]);
+			}
+
+		    }
+                }
+
+
+                
+                if (!can_uncarve(prev_c, global_map, 1) ||
+                    !can_uncarve(c, global_map, 2)) { 
+                    break; 
+                }
+                unpaint_step(prev_c, c, global_map);
+                prev_c = c;
+            }
+        }
+    }
+
+    function can_uncarve(coord, arg_map) {
+        var n = [(coord[0]-1), coord[1]];
+        var s = [(coord[0]+1), coord[1]];
+        var e = [coord[0], (coord[1]+1)];
+        var w = [coord[0], (coord[1]-1)];
+
+        // cannot uncarve if a door is disconnected from the maze
+        // in the process
+        if (global_map[n[0]][n[1]] == DOOR_TYPE ||
+            global_map[s[0]][s[1]] == DOOR_TYPE ||
+            global_map[e[0]][e[1]] == DOOR_TYPE ||
+            global_map[w[0]][w[1]] == DOOR_TYPE) {
+            return false;
+        }
+
+        var counter = 0;
+        if (global_map[n[0]][n[1]] == CORRIDOR_TYPE) { counter++; }
+        if (global_map[s[0]][s[1]] == CORRIDOR_TYPE) { counter++; }
+        if (global_map[e[0]][e[1]] == CORRIDOR_TYPE) { counter++; }
+        if (global_map[w[0]][w[1]] == CORRIDOR_TYPE) { counter++; }
+
+        return counter < 2;
+    }
+
+    function unpaint_step(from, to, arg_map) {
+        var step_size = 2;
+
+        var r_from = from[0];
+        var c_from = from[1];
+        var r_to = to[0];
+        var c_to = to[1];
+        
+        if (r_to - r_from == step_size) {
+            // stepped south
+            globalmap_unpaint(from);
+            globalmap_unpaint([r_from+1, c_to]);
+        }
+        else if (r_from - r_to == step_size) {
+            // stepped north
+            globalmap_unpaint(from);
+            globalmap_unpaint([r_from-1, c_to]);
+        }
+        else if (c_to - c_from == step_size) {
+            // stepped east
+            globalmap_unpaint(from);
+            globalmap_unpaint([r_from, c_from+1]);
+        }
+        else if (c_from - c_to == step_size) {
+            // stepped west
+            globalmap_unpaint(from);
+            globalmap_unpaint([r_from, c_from-1]);
+        }
+        else {
+            console.log("ERROR: Something went wrong while stepping "+
+                        "in dfs when creating maze");
+        }
+    }
+    
+    function globalmap_unpaint(coord) {
+        var cr = coord[0];
+        var cc = coord[1];
+        
+        var odd_row = cr % 2;
+        var odd_col = cc % 2;
+
+        if ((odd_row && odd_col) || (!odd_row && !odd_col)) { 
+            global_map[cr][cc] = 0; // 0
+        } else {
+            global_map[cr][cc] = 1; // 1
+        }
+    }
+
 
 
     function generateMaze(arg_map) {
@@ -243,17 +385,23 @@ function generateMap() {
 
         dfs_nonrecursive(coords_stack.pop(), arg_map);
 
+
         function dfs_nonrecursive(start_coord, arg_map) {
             var fields_to_check = [];
             var stepping_from = [];
             fields_to_check.push(start_coord);
             stepping_from.push(start_coord);
 
+            var dfs_steps_current_trace = [];
+
             while(fields_to_check.length > 0) {
                 var coor = fields_to_check.pop();
                 var from = stepping_from.pop();
                 var cr = coor[0];
                 var cc = coor[1];
+
+                // add current coord to current stepping trace
+                dfs_steps_current_trace.push(coor);
 
                 var valid_neighbours = [];
                 valid_neighbours = filter_valid_fields(get_coords_of_surrounding(coor),
@@ -267,6 +415,8 @@ function generateMap() {
 
                 // if no neighbours for current node, break this loop iteration
                 if (valid_neighbours.length == 0) {
+                    dfs_steps_arrays.push(dfs_steps_current_trace);
+                    dfs_steps_current_trace = [];
                     continue;
                 }
 
