@@ -91,7 +91,34 @@ function generateMap() {
     var dfs_steps_arrays = [];
     generateMaze(global_map);
     connectRoomsWithMaze(global_map, rooms);
-    uncarve_deadends(dfs_steps_arrays);
+
+
+    uncarve_deadendpoints(dfs_steps_arrays);
+    // uncarve_deadends(dfs_steps_arrays);
+
+
+    function uncarve_deadendpoints(traces) {
+        var done = false;
+        while (!done) {
+            done = true;
+            for (var i = 0; i < traces.length; i++) {
+                var trace = traces[i];
+                var last_coord = trace[trace.length-1];
+                if (trace.length > 1 && can_uncarve(last_coord, global_map)) {
+                    var surr = get_coords_of_surrounding(trace.pop(), 1);
+                    globalmap_unpaint(last_coord);
+                    surr.forEach(function(c) {
+                        if (can_uncarve(c, global_map)) {
+                            globalmap_unpaint(c);
+                        }
+                    });
+                    done = false;
+                }
+            }
+        }
+    }
+
+
 
     function connectRoomsWithMaze(arg_map, rooms) {
 
@@ -175,6 +202,7 @@ function generateMap() {
     function uncarve_deadends(dfs_steps_arrays) {
         for (var i = dfs_steps_arrays.length-1; i >=0; i--) {
             var trace = dfs_steps_arrays[i];
+
             if (trace.length < 2) { continue; }
             var prev_c = trace.pop();
             while (trace.length > 0) {
@@ -209,22 +237,22 @@ function generateMap() {
                     }
                 } 
                 else if (col_diff > 0) {
-		    if (can_uncarve(prev_c, global_map)) {
-			globalmap_unpaint(prev_c);
-			if (can_uncarve([prev_c_row, prev_c_col+1], global_map)) {
-			    globalmap_unpaint([prev_c_row, prev_c_col+1]);
-			}
+                    if (can_uncarve(prev_c, global_map)) {
+                        globalmap_unpaint(prev_c);
+                        if (can_uncarve([prev_c_row, prev_c_col+1], global_map)) {
+                            globalmap_unpaint([prev_c_row, prev_c_col+1]);
+                        }
 
-		    }
+                    }
                 }
                 else if (col_diff < 0) {
-		    if (can_uncarve(prev_c, global_map)) {
-			globalmap_unpaint(prev_c);
-			if (can_uncarve([prev_c_row, prev_c_col-1], global_map)) {
-			    globalmap_unpaint([prev_c_row, prev_c_col-1]);
-			}
+                    if (can_uncarve(prev_c, global_map)) {
+                        globalmap_unpaint(prev_c);
+                        if (can_uncarve([prev_c_row, prev_c_col-1], global_map)) {
+                            globalmap_unpaint([prev_c_row, prev_c_col-1]);
+                        }
 
-		    }
+                    }
                 }
 
 
@@ -296,7 +324,7 @@ function generateMap() {
                         "in dfs when creating maze");
         }
     }
-    
+
     function globalmap_unpaint(coord) {
         var cr = coord[0];
         var cc = coord[1];
@@ -309,6 +337,23 @@ function generateMap() {
         } else {
             global_map[cr][cc] = 1; // 1
         }
+    }
+
+    // returns a list of N,S,E,W coordinates, relative to center_coord
+    function get_coords_of_surrounding(center_coord, opt_radius) {
+        opt_radius = typeof opt_radius !== 'undefined' ? opt_radius : 2;
+        var r = center_coord[0];
+        var c = center_coord[1];
+        var result_coords = [];
+
+        var o = opt_radius
+
+        if (r > 1) { result_coords.push([r-o, c]); }
+        if (r < MAP_WIDTH-2) { result_coords.push([r+o, c]); }
+        if (c > 1) { result_coords.push([r, c-o]); }
+        if (c < MAP_HEIGHT-2) { result_coords.push([r, c+o]); }
+
+        return result_coords;
     }
 
     function generateMaze(arg_map) {
@@ -332,7 +377,7 @@ function generateMap() {
         function dfs_nonrecursive(start_coord, arg_map) {
             var fields_to_check = [];
             var stepping_from = [];
-	    var first_run = true;
+            var first_run = true;
             var dfs_steps_current_trace = [];
 
             fields_to_check.push(start_coord);
@@ -360,10 +405,11 @@ function generateMap() {
                 // if no neighbours for current node, break this loop iteration
                 if (valid_neighbours.length == 0) {
                     dfs_steps_arrays.push(dfs_steps_current_trace);
-		    if (first_run) {
-			var reversed_trace = cloneMap(dfs_steps_current_trace).reverse();
-			dfs_steps_arrays.push(reversed_trace);
-		    }
+                    if (first_run) {
+                        var reversed_trace = cloneMap(dfs_steps_current_trace).reverse();
+                        dfs_steps_arrays.push(reversed_trace);
+                        // first_run = false;
+                    }
                     dfs_steps_current_trace = [];
                     continue;
                 }
@@ -415,20 +461,6 @@ function generateMap() {
                 console.log("ERROR: Something went wrong while stepping "+
                             "in dfs when creating maze");
             }
-        }
-
-        // returns a list of N,S,E,W coordinates, relative to center_coord
-        function get_coords_of_surrounding(center_coord) {
-            var r = center_coord[0];
-            var c = center_coord[1];
-            var result_coords = [];
-
-            if (r > 1) { result_coords.push([r-2, c]); }
-            if (r < MAP_WIDTH-2) { result_coords.push([r+2, c]); }
-            if (c > 1) { result_coords.push([r, c-2]); }
-            if (c < MAP_HEIGHT-2) { result_coords.push([r, c+2]); }
-
-            return result_coords;
         }
 
         // return a new array of all the fields in coords_array that are
